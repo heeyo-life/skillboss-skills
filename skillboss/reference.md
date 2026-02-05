@@ -85,6 +85,13 @@ Complete model list and detailed parameter documentation.
 
 - `vertex/veo-3.1-fast-generate-preview` - Google Veo 3.1
 
+### Music Generation
+
+- `replicate/elevenlabs/music` - ElevenLabs Music, high-quality with natural vocals
+- `replicate/google/lyria-2` - Google Lyria 2, DeepMind's advanced music AI
+- `replicate/meta/musicgen` - Meta MusicGen, open-source, diverse styles (recommended)
+- `replicate/stability-ai/stable-audio-2.5` - Stable Audio 2.5, up to 3 minutes
+
 ### Web Search
 
 - `perplexity/sonar-pro` - AI search with citations
@@ -189,6 +196,21 @@ node ./skillboss/scripts/api-hub.js video [options]
 |--------|----------|-------------|
 | `--model` | Yes | Model identifier |
 | `--prompt` | Yes | Video description |
+| `--output` | No | Output file path |
+
+### music
+
+Music generation from text prompts.
+
+```bash
+node ./skillboss/scripts/api-hub.js music [options]
+```
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `--model` | No | Model identifier (default: `replicate/elevenlabs/music`) |
+| `--prompt` | Yes | Music description |
+| `--duration` | No | Duration in seconds |
 | `--output` | No | Output file path |
 
 ### search

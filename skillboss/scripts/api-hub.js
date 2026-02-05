@@ -601,6 +601,31 @@ async function video(params) {
 }
 
 /**
+ * Music generation command
+ * @param {object} params - Music parameters
+ * @param {string} params.model - Model in "vendor/model" format
+ * @param {string} params.prompt - Music description prompt
+ * @param {string} [params.duration] - Duration in seconds
+ * @param {string} [params.output] - Output file path
+ * @returns {Promise<object>} Music generation result
+ */
+async function music(params) {
+  if (!params.prompt) {
+    throw new Error('--prompt is required for music generation')
+  }
+
+  const inputs = {
+    prompt: params.prompt,
+  }
+
+  if (params.duration) {
+    inputs.duration = parseInt(params.duration)
+  }
+
+  return run({ model: params.model, inputs, output: params.output })
+}
+
+/**
  * Gamma presentation command
  * @param {object} params - Gamma parameters
  * @param {string} params.model - Model (gamma/generation)
@@ -691,6 +716,7 @@ Commands:
   search       Web search (scrapingdog, perplexity)
   scrape       Web scraping (scrapingdog, firecrawl)
   video        Video generation (minimax, vertex/veo, mm/t2v, mm/i2v)
+  music        Music generation (replicate/elevenlabs, replicate/meta/musicgen)
   gamma        Presentations (gamma)
   send-email   Send a single email (aws/ses)
   send-batch   Send batch emails with templates
@@ -722,6 +748,10 @@ Examples:
   node api-hub.js video --prompt "A cat walking" --duration 5 --output video.mp4
   node api-hub.js video --prompt "Animate this" --image "https://example.com/cat.jpg" --duration 5 --output video.mp4
   node api-hub.js video --model "vertex/veo-3.1-fast-generate-preview" --prompt "A sunset" --output video.mp4
+
+  # Music (default: replicate/elevenlabs/music)
+  node api-hub.js music --prompt "upbeat electronic dance track" --output music.mp3
+  node api-hub.js music --model "replicate/meta/musicgen" --prompt "calm acoustic guitar" --duration 30
 
   # Search & Scrape
   node api-hub.js search --model "scrapingdog/google_search" --query "nodejs"
@@ -939,6 +969,29 @@ Examples:
         break
       }
 
+      case 'music': {
+        if (!args.prompt) {
+          console.error('Error: --prompt is required')
+          process.exit(1)
+        }
+        const musicModel = args.model || 'replicate/elevenlabs/music'
+        result = await music({
+          model: musicModel,
+          prompt: args.prompt,
+          duration: args.duration,
+          output: args.output,
+        })
+        if (args.output) {
+          console.log(`Music saved to: ${args.output}`)
+          if (result.url) {
+            console.log(`URL: ${result.url}`)
+          }
+        } else {
+          console.log(JSON.stringify(result, null, 2))
+        }
+        break
+      }
+
       case 'gamma': {
         if (!args.model || !args['input-text']) {
           console.error('Error: --model and --input-text are required')
@@ -1060,6 +1113,7 @@ module.exports = {
   search,
   scrape,
   video,
+  music,
   gamma,
   listModels,
 

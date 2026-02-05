@@ -15,7 +15,7 @@ Use this skill when the user wants to:
 - **Store data**: User data, form submissions, orders, bookings, member info - uses D1 database with auto-provisioning
 - **Accept payments**: Stripe integration for subscriptions, one-time payments, e-commerce
 - **Add authentication**: Login/signup with Google OAuth or email OTP
-- **Generate AI content**: Images (Gemini, Flux, DALL-E), audio/TTS (ElevenLabs, Minimax), videos (Veo), chat (50+ LLMs)
+- **Generate AI content**: Images (Gemini, Flux, DALL-E), audio/TTS (ElevenLabs, Minimax), music (MusicGen, Lyria), videos (Veo), chat (50+ LLMs)
 - **Send emails**: Single or batch emails with templates
 - **Create presentations**: Slides and pitch decks via Gamma AI
 - **Scrape/search web**: Extract data with Firecrawl, Perplexity, ScrapingDog
@@ -51,6 +51,16 @@ node ./skillboss/scripts/api-hub.js video --prompt "Animate this scene" --image 
 node ./skillboss/scripts/api-hub.js tts --model "minimax/speech-01-turbo" --text "Hello world" --output /tmp/hello.mp3
 ```
 
+### Generate music:
+```bash
+node ./skillboss/scripts/api-hub.js music --prompt "upbeat electronic dance track"
+
+node ./skillboss/scripts/api-hub.js music --prompt "calm acoustic guitar" --output /tmp/guitar.mp3
+
+# With specific model:
+node ./skillboss/scripts/api-hub.js music --model "replicate/meta/musicgen" --prompt "epic orchestral soundtrack" --duration 60
+```
+
 ### Send email:
 ```bash
 node ./skillboss/scripts/api-hub.js send-email --to "user@example.com" --subject "Hello" --body "<p>Hi there!</p>"
@@ -79,6 +89,7 @@ node ./skillboss/scripts/stripe-connect.js
 | `tts` | Text-to-speech (model required) | `--model`, `--text`, `--voice-id`, `--output` |
 | `image` | Image generation (default: `mm/img`) | `--prompt`, `--size`, `--output`, `--model` |
 | `video` | Text-to-video (default: `mm/t2v`) or image-to-video (default: `mm/i2v` with `--image`) | `--prompt`, `--output`, `--image`, `--duration`, `--model` |
+| `music` | Music generation (default: `replicate/elevenlabs/music`) | `--prompt`, `--duration`, `--output`, `--model` |
 | `search` | Web search (model required) | `--model`, `--query` |
 | `scrape` | Web scraping (model required) | `--model`, `--url`/`--urls` |
 | `gamma` | Presentations | `--model`, `--input-text`, `--format` (presentation/document/social/webpage) |
@@ -100,6 +111,7 @@ node ./skillboss/scripts/stripe-connect.js
 | Search | `perplexity/sonar-pro`, `scrapingdog/google_search` |
 | Scrape | `firecrawl/scrape`, `firecrawl/extract`, `scrapingdog/screenshot` |
 | Video | `mm/t2v` (text-to-video), `mm/i2v` (image-to-video), `vertex/veo-3.1-fast-generate-preview` |
+| Music | `replicate/elevenlabs/music`, `replicate/meta/musicgen`, `replicate/google/lyria-2` |
 | Presentation | `gamma/generation` |
 
 For complete model list and detailed parameters, see `reference.md`.
@@ -501,6 +513,32 @@ async function textToSpeech(text: string): Promise<ArrayBuffer> {
 }
 
 // ============================================================================
+// MUSIC GENERATION
+// ============================================================================
+async function generateMusic(prompt: string, duration?: number): Promise<string> {
+  const model = 'replicate/elevenlabs/music' // or replicate/meta/musicgen, replicate/google/lyria-2
+
+  const response = await fetch(`${API_BASE}/run`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SKILLBOSS_API_KEY}`
+    },
+    body: JSON.stringify({
+      model,
+      inputs: {
+        prompt,
+        duration: duration || 30  // seconds
+      }
+    })
+  })
+  const data = await response.json()
+
+  // Response: {audio_url: "https://...", duration_seconds: 30}
+  return data.audio_url
+}
+
+// ============================================================================
 // VIDEO GENERATION
 // ============================================================================
 // Text-to-video
@@ -562,6 +600,7 @@ async function imageToVideo(prompt: string, imageUrl: string, duration?: number)
 | Image | vertex/gemini-3-pro-image-preview | `generated_images[0]` |
 | Image | replicate/flux-* | `data[0]` (array of URLs) |
 | TTS | minimax/speech-01-turbo, elevenlabs/* | Binary audio (use `response.arrayBuffer()`) |
+| Music | replicate/elevenlabs/music, replicate/meta/musicgen | `audio_url` |
 | Video | mm/t2v, mm/i2v | `video_url` |
 | Video | vertex/veo-* | `generatedSamples[0].video.uri` or `videos[0]` |
 
