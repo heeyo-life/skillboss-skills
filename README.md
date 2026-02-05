@@ -14,6 +14,22 @@
 
 SkillBoss is an AI skills platform by HeyBoss (backed by an OpenAI fund) that equips Claude Code, Codex, and other agent platforms with production-ready capabilities for content generation, application building, product deployment, and real-world workflow automation. By providing a unified, modular skills layer, SkillBoss helps AI agents move beyond text and reliably execute real-world tasks at scale.
 
+## What's New
+
+🚀 **Claude 4.6 Opus** — SkillBoss now supports Claude 4.6 Opus, the first Opus model with 1M token context, Agent Teams, and Adaptive Thinking. Top scores on Terminal-Bench 2.0 (65.4%) and GDPval-AA (1606 Elo).
+
+🎵 **Music Generation** — Generate music with AI using ElevenLabs Music, Google Lyria 2, Meta MusicGen, and Stable Audio 2.5. Text-to-music with customizable duration.
+
+📦 **One-Click Deploy** — Deploy full-stack apps (React + Hono) to Cloudflare Workers with a single command. Auto-provisions D1 databases, KV, and R2 storage.
+
+<!-- 👆 Keep the 3 most recent items above. When adding a new one, move the oldest into the <details> block below. -->
+<details>
+<summary>Previous updates</summary>
+
+*(No older updates yet)*
+
+</details>
+
 ## Features
 
 - Deploy websites to Cloudflare Workers

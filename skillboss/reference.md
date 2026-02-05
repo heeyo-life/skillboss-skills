@@ -7,7 +7,8 @@ Complete model list and detailed parameter documentation.
 ### Chat Completions
 
 **Bedrock (AWS Claude):**
-- `bedrock/claude-4-5-opus` - Claude 4.5 Opus (most powerful, recommended for complex tasks)
+- `bedrock/claude-4-6-opus` - Claude 4.6 Opus (most powerful, 1M context, recommended for complex tasks)
+- `bedrock/claude-4-5-opus` - Claude 4.5 Opus (powerful reasoning model)
 - `bedrock/claude-4-5-sonnet` - Claude 4.5 Sonnet (balanced performance and cost)
 - `bedrock/claude-4-5-haiku` - Claude 4.5 Haiku (fastest, for simple tasks)
 - `bedrock/claude-4-sonnet` - Claude 4 Sonnet

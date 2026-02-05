@@ -26,6 +26,7 @@ These examples assume you are in your AI tool's skills directory (the folder con
 
 ### Chat with AI models:
 ```bash
+node ./skillboss/scripts/api-hub.js chat --model "bedrock/claude-4-6-opus" --prompt "Solve this complex reasoning problem"
 node ./skillboss/scripts/api-hub.js chat --model "bedrock/claude-4-5-sonnet" --prompt "Explain quantum computing"
 node ./skillboss/scripts/api-hub.js chat --model "openai/gpt-5" --prompt "Write a haiku" --stream
 ```
@@ -105,7 +106,7 @@ node ./skillboss/scripts/stripe-connect.js
 
 | Category | Models |
 |----------|--------|
-| Chat | `bedrock/claude-4-5-sonnet`, `openai/gpt-5`, `openrouter/deepseek/deepseek-r1`, `vertex/gemini-2.5-flash` |
+| Chat | `bedrock/claude-4-6-opus`, `bedrock/claude-4-5-sonnet`, `openai/gpt-5`, `openrouter/deepseek/deepseek-r1`, `vertex/gemini-2.5-flash` |
 | TTS | `minimax/speech-01-turbo`, `elevenlabs/eleven_multilingual_v2` |
 | Image | `mm/img`, `vertex/gemini-3-pro-image-preview`, `replicate/black-forest-labs/flux-schnell` |
 | Search | `perplexity/sonar-pro`, `scrapingdog/google_search` |
@@ -187,7 +188,7 @@ The client handles this automatically. If all retries fail, consider:
 |------|---------------|-----------------|
 | TTS | `minimax/speech-01-turbo` | `elevenlabs/eleven_multilingual_v2` |
 | Image | `mm/img` | `vertex/gemini-3-pro-image-preview` → `vertex/gemini-2.5-flash-image-preview` → `replicate/black-forest-labs/flux-schnell` |
-| Chat | `bedrock/claude-4-5-sonnet` | `openai/gpt-5` → `vertex/gemini-2.5-flash` |
+| Chat | `bedrock/claude-4-6-opus` | `bedrock/claude-4-5-sonnet` → `openai/gpt-5` → `vertex/gemini-2.5-flash` |
 | Search | `perplexity/sonar-pro` | `scrapingdog/google_search` |
 | Scrape | `firecrawl/scrape` | `firecrawl/extract` → `scrapingdog/screenshot` |
 | Video (text-to-video) | `mm/t2v` | `vertex/veo-3.1-fast-generate-preview` |
@@ -439,7 +440,7 @@ async function chat(prompt: string): Promise<string> {
       'Authorization': `Bearer ${SKILLBOSS_API_KEY}`
     },
     body: JSON.stringify({
-      model: 'bedrock/claude-4-5-sonnet', // or openai/gpt-5, vertex/gemini-2.5-flash
+      model: 'bedrock/claude-4-5-sonnet', // or bedrock/claude-4-6-opus, openai/gpt-5, vertex/gemini-2.5-flash
       inputs: {
         messages: [{ role: 'user', content: prompt }]
       }
