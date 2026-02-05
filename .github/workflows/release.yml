@@ -2,19 +2,97 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 10 # For changelog generation
+
+      - name: Get version from config
+        id: version
+        run: |
+          VERSION=$(jq -r .version skillboss/config.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Version: $VERSION"
+
+      - name: Check if version already exists in R2
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: r2 object head skillboss/versions/${{ steps.version.outputs.version }}.zip
+        id: check_exists
+        continue-on-error: true
+
+      - name: Fail if version exists
+        if: steps.check_exists.outcome == 'success'
+        run: |
+          echo "❌ Version ${{ steps.version.outputs.version }} already exists in R2!"
+          echo "   Please bump the version in skillboss/config.json before pushing."
+          exit 1
+
+      - name: Generate changelog from commits
+        id: changelog
+        run: |
+          CHANGELOG=$(git log --oneline -10 --pretty=format:"- %s" | head -10)
+          # Use delimiter for multiline output
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "📝 Changelog:"
+          echo "$CHANGELOG"
 
       - name: Create zip
-        run: zip -r skillboss.zip skillboss/
+        run: |
+          zip -r skillboss.zip skillboss/
+          echo "📁 Zip size: $(du -h skillboss.zip | cut -f1)"
 
-      - name: Create Release
+      - name: Calculate file hash
+        id: hash
+        run: |
+          HASH=$(sha256sum skillboss.zip | cut -d' ' -f1)
+          SIZE=$(stat -c%s skillboss.zip)
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+          echo "size=$SIZE" >> $GITHUB_OUTPUT
+          echo "🔒 SHA256: $HASH"
+          echo "📏 Size: $SIZE bytes"
+
+      - name: Upload to R2
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: r2 object put skillboss/versions/${{ steps.version.outputs.version }}.zip --file=skillboss.zip
+
+      - name: Notify skillboss webhook
+        run: |
+          curl -X POST "${{ secrets.SKILLBOSS_WEBHOOK_URL }}/api/skills/webhook/release" \
+            -H "Authorization: Bearer ${{ secrets.SKILLBOSS_WEBHOOK_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "version": "${{ steps.version.outputs.version }}",
+              "r2_key": "versions/${{ steps.version.outputs.version }}.zip",
+              "file_size": ${{ steps.hash.outputs.size }},
+              "file_hash": "${{ steps.hash.outputs.hash }}",
+              "changelog": ${{ toJson(steps.changelog.outputs.changelog) }},
+              "commit_sha": "${{ github.sha }}"
+            }'
+
+      - name: Create GitHub Release (optional)
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body: |
+            ## Changes
+            ${{ steps.changelog.outputs.changelog }}
+
+            ---
+            📦 Also available via [skillboss.co](https://skillboss.co)
           files: skillboss.zip
+          generate_release_notes: false
