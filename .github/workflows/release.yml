@@ -28,12 +28,16 @@ jobs:
 
       - name: Check if version already exists in R2
         id: check_exists
-        continue-on-error: true
         run: |
-          npx wrangler r2 object get "skillboss/versions/${{ steps.version.outputs.version }}.zip" --file=/tmp/r2_check && rm -f /tmp/r2_check
+          if npx wrangler r2 object get "skillboss/versions/${{ steps.version.outputs.version }}.zip" --file=/tmp/r2_check 2>/dev/null; then
+            rm -f /tmp/r2_check
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Fail if version exists
-        if: steps.check_exists.outcome == 'success'
+        if: steps.check_exists.outputs.exists == 'true'
         run: |
           echo "❌ Version ${{ steps.version.outputs.version }} already exists in R2!"
           echo "   Please bump the version in skillboss/config.json before pushing."
