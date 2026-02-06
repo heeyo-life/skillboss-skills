@@ -30,7 +30,7 @@ jobs:
         id: check_exists
         continue-on-error: true
         run: |
-          npx wrangler r2 object head skillboss/versions/${{ steps.version.outputs.version }}.zip
+          npx wrangler r2 object get "skillboss/versions/${{ steps.version.outputs.version }}.zip" --file=/tmp/r2_check && rm -f /tmp/r2_check
 
       - name: Fail if version exists
         if: steps.check_exists.outcome == 'success'
