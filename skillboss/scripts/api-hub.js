@@ -15,6 +15,7 @@ const { fetchWithRetry } = require('./lib/fetch-retry')
  * - Image: vertex/gemini-3-pro-image-preview, replicate/flux
  * - Search: scrapingdog, perplexity, firecrawl
  * - Video: minimax
+ * - Document: reducto (parse, extract, split, edit)
  * - Email: aws/ses
  *
  * Usage:
@@ -318,6 +319,16 @@ async function run(params) {
       mediaUrl = data.image_url
       mediaType = 'image'
     }
+    // Audio URL patterns
+    else if (
+      data.audio_url &&
+      typeof data.audio_url === 'string' &&
+      data.audio_url.startsWith('http')
+    ) {
+      // MM TTS response: {audio_url: "https://..."}
+      mediaUrl = data.audio_url
+      mediaType = 'audio'
+    }
     // Video URL patterns
     else if (data.video_url) {
       // Common video response: {video_url: "https://..."}
@@ -456,6 +467,12 @@ async function tts(params) {
       // Default speaker sample
       inputs.speaker =
         'https://replicate.delivery/pbxt/Jt79w0xsT64R1JsiJ0LQRL8UcWspg5J4RFrU6YwEKpOT1ukS/male.wav'
+    }
+  } else if (vendor === 'mm') {
+    // MM TTS (qwen3-tts-flash) uses 'text' and optional 'voice'
+    inputs.text = params.text
+    if (params.voiceId) {
+      inputs.voice = params.voiceId
     }
   } else {
     // Default: use 'text'
@@ -626,6 +643,58 @@ async function music(params) {
 }
 
 /**
+ * Multimodal understanding command (video/image/audio analysis)
+ * @param {object} params - Multimodal parameters
+ * @param {string} params.model - Model in "vendor/model" format (e.g., mm/qwen3-vl-plus)
+ * @param {string} params.prompt - Text prompt/question about the media
+ * @param {string} [params.video] - Video URL to analyze
+ * @param {string} [params.image] - Image URL to analyze
+ * @param {string} [params.audio] - Audio URL to analyze/transcribe
+ * @returns {Promise<object>} Multimodal analysis result
+ */
+async function multimodal(params) {
+  if (!params.prompt) {
+    throw new Error('--prompt is required for multimodal')
+  }
+  if (!params.video && !params.image && !params.audio) {
+    throw new Error('At least one of --video, --image, or --audio is required')
+  }
+
+  const [vendor] = params.model.split('/')
+  const inputs = {}
+
+  if (vendor === 'mm') {
+    // MM multimodal models use messages format
+    const content = []
+    if (params.video) {
+      content.push({ video: params.video })
+      if (params.fps) {
+        content[content.length - 1].fps = parseInt(params.fps)
+      }
+    }
+    if (params.image) {
+      content.push({ image: params.image })
+    }
+    if (params.audio) {
+      content.push({ audio: params.audio })
+    }
+    content.push({ text: params.prompt })
+
+    inputs.input = {
+      messages: [{ role: 'user', content }]
+    }
+  } else {
+    // Generic format
+    inputs.prompt = params.prompt
+    if (params.video) inputs.video_url = params.video
+    if (params.image) inputs.image_url = params.image
+    if (params.audio) inputs.audio_url = params.audio
+  }
+
+  return run({ model: params.model, inputs })
+}
+
+/**
  * Gamma presentation command
  * @param {object} params - Gamma parameters
  * @param {string} params.model - Model (gamma/generation)
@@ -645,6 +714,42 @@ async function gamma(params) {
     }
   }
   return run({ model: params.model, inputs })
+}
+
+/**
+ * Document processing command (Reducto)
+ * @param {object} params - Document parameters
+ * @param {string} params.model - Model in "reducto/model" format (parse, extract, split, edit)
+ * @param {string} params.url - Document URL (PDF, DOCX, etc.)
+ * @param {string} [params.schema] - JSON Schema string for extract (e.g. '{"type":"object","properties":{...}}')
+ * @param {string} [params.splitDescription] - JSON array of {name, description} for split
+ * @param {string} [params.instructions] - JSON string of edit instructions for edit
+ * @param {string} [params.settings] - JSON string of additional settings
+ * @param {string} [params.output] - Output file path to save results
+ * @returns {Promise<object>} Document processing result
+ */
+async function document(params) {
+  if (!params.url) {
+    throw new Error('--url is required (document URL)')
+  }
+
+  const inputs = { document_url: params.url }
+  const model = params.model.split('/')[1] // parse, extract, split, edit
+
+  if (model === 'extract' && params.schema) {
+    inputs.instructions = { schema: JSON.parse(params.schema) }
+  }
+  if (model === 'split' && params.splitDescription) {
+    inputs.split_description = JSON.parse(params.splitDescription)
+  }
+  if (model === 'edit' && params.instructions) {
+    inputs.edit_instructions = JSON.parse(params.instructions)
+  }
+  if (params.settings) {
+    inputs.settings = JSON.parse(params.settings)
+  }
+
+  return run({ model: params.model, inputs, output: params.output })
 }
 
 /**
@@ -711,12 +816,14 @@ Commands:
   list-models  List available models from API Hub
   run          Generic endpoint access (any model)
   chat         Chat completions (bedrock, openai, anthropic, openrouter, vertex, minimax)
-  tts          Text-to-speech (elevenlabs, minimax, openai)
+  tts          Text-to-speech (elevenlabs, minimax, openai, mm/qwen3-tts-flash)
   image        Image generation (vertex/gemini, replicate/flux, mm/img)
+  multimodal   Video/image/audio understanding (mm/qwen3-vl-plus, mm/qwen3-vl-max)
   search       Web search (scrapingdog, perplexity)
   scrape       Web scraping (scrapingdog, firecrawl)
   video        Video generation (minimax, vertex/veo, mm/t2v, mm/i2v)
   music        Music generation (replicate/elevenlabs, replicate/meta/musicgen)
+  document     Document processing (reducto: parse, extract, split, edit)
   gamma        Presentations (gamma)
   send-email   Send a single email (aws/ses)
   send-batch   Send batch emails with templates
@@ -738,6 +845,11 @@ Examples:
 
   # TTS
   node api-hub.js tts --model "elevenlabs/eleven_multilingual_v2" --text "Hello" --output /tmp/audio.mp3
+  node api-hub.js tts --model "mm/qwen3-tts-flash" --text "Hello" --output /tmp/audio.wav
+
+  # Multimodal (video/image understanding)
+  node api-hub.js multimodal --model "mm/qwen3-vl-plus" --video "https://example.com/video.mp4" --prompt "What's happening in this video?"
+  node api-hub.js multimodal --model "mm/qwen3-vl-max" --image "https://example.com/image.jpg" --prompt "Describe this image"
 
   # Image (default: mm/img)
   node api-hub.js image --prompt "A sunset" --output image.png
@@ -752,6 +864,10 @@ Examples:
   # Music (default: replicate/elevenlabs/music)
   node api-hub.js music --prompt "upbeat electronic dance track" --output music.mp3
   node api-hub.js music --model "replicate/meta/musicgen" --prompt "calm acoustic guitar" --duration 30
+
+  # Document Processing
+  node api-hub.js document --model "reducto/parse" --url "https://example.com/doc.pdf"
+  node api-hub.js document --model "reducto/extract" --url "https://example.com/doc.pdf" --schema '{"type":"object","properties":{"title":{"type":"string"}}}'
 
   # Search & Scrape
   node api-hub.js search --model "scrapingdog/google_search" --query "nodejs"
@@ -992,6 +1108,37 @@ Examples:
         break
       }
 
+      case 'multimodal': {
+        if (!args.model) {
+          console.error('Error: --model is required')
+          process.exit(1)
+        }
+        if (!args.prompt) {
+          console.error('Error: --prompt is required')
+          process.exit(1)
+        }
+        if (!args.video && !args.image && !args.audio) {
+          console.error('Error: At least one of --video, --image, or --audio is required')
+          process.exit(1)
+        }
+        result = await multimodal({
+          model: args.model,
+          prompt: args.prompt,
+          video: args.video,
+          image: args.image,
+          audio: args.audio,
+          fps: args.fps,
+        })
+
+        // Extract text from response
+        const text =
+          result.output?.choices?.[0]?.message?.content?.[0]?.text ||
+          result.text ||
+          JSON.stringify(result, null, 2)
+        console.log(text)
+        break
+      }
+
       case 'gamma': {
         if (!args.model || !args['input-text']) {
           console.error('Error: --model and --input-text are required')
@@ -1002,6 +1149,28 @@ Examples:
           inputText: args['input-text'],
         })
         console.log(JSON.stringify(result, null, 2))
+        break
+      }
+
+      case 'document': {
+        if (!args.model || !args.url) {
+          console.error('Error: --model and --url are required')
+          process.exit(1)
+        }
+        result = await document({
+          model: args.model,
+          url: args.url,
+          schema: args.schema,
+          splitDescription: args['split-description'],
+          instructions: args.instructions,
+          settings: args.settings,
+          output: args.output,
+        })
+        if (args.output) {
+          console.log(`Saved to: ${args.output}`)
+        } else {
+          console.log(JSON.stringify(result, null, 2))
+        }
         break
       }
 
@@ -1110,10 +1279,12 @@ module.exports = {
   chat,
   tts,
   image,
+  multimodal,
   search,
   scrape,
   video,
   music,
+  document,
   gamma,
   listModels,
 
