@@ -16,7 +16,7 @@ const { fetchWithRetry } = require('./lib/fetch-retry')
  * - Search: scrapingdog, perplexity, firecrawl
  * - Video: minimax
  * - Document: reducto (parse, extract, split, edit)
- * - SMS/Verify: prelude (OTP send/check, notify)
+ * - SMS/Verify: prelude (OTP send/check)
  * - Email: aws/ses
  *
  * Usage:
@@ -29,7 +29,6 @@ const { fetchWithRetry } = require('./lib/fetch-retry')
  *   node api-hub.js scrape --model "firecrawl/scrape" --url "https://example.com"
  *   node api-hub.js sms-verify --phone "+1234567890"
  *   node api-hub.js sms-check --phone "+1234567890" --code "123456"
- *   node api-hub.js sms-send --phone "+1234567890" --template-id "your_template_id"
  *   node api-hub.js send-email --to "a@b.com" --subject "Subject" --body "<html>...</html>"
  *   node api-hub.js send-batch --subject "Hello {{name}}" --body "<html>...</html>" --receivers '[...]'
  */
@@ -805,33 +804,6 @@ async function smsCheck(params) {
 }
 
 /**
- * Send SMS notification via Prelude
- * @param {object} params - Notify parameters
- * @param {string} params.phone - Phone number in E.164 format
- * @param {string} params.templateId - Prelude template ID (configured in Prelude dashboard)
- * @param {object} [params.variables] - Template variables
- * @param {string} [params.from] - Sender number
- * @returns {Promise<object>} Send result
- */
-async function smsSend(params) {
-  if (!params.phone) {
-    throw new Error('--phone is required (E.164 format, e.g. +1234567890)')
-  }
-  if (!params.templateId) {
-    throw new Error('--template-id is required (configured in Prelude dashboard)')
-  }
-
-  const inputs = {
-    template_id: params.templateId,
-    to: params.phone,
-  }
-  if (params.variables) inputs.variables = params.variables
-  if (params.from) inputs.from = params.from
-
-  return run({ model: 'prelude/notify-send', inputs })
-}
-
-/**
  * List available models from API Hub
  * @param {object} [params] - List parameters
  * @param {string} [params.type] - Filter by category (chat, tts, image, video, scraping, etc.)
@@ -906,7 +878,6 @@ Commands:
   gamma        Presentations (gamma)
   sms-verify   Send OTP verification code (prelude)
   sms-check    Check OTP verification code (prelude)
-  sms-send     Send SMS notification (prelude)
   send-email   Send a single email (aws/ses)
   send-batch   Send batch emails with templates
   version      Check for updates and show current/latest version
@@ -955,10 +926,9 @@ Examples:
   node api-hub.js search --model "scrapingdog/google_search" --query "nodejs"
   node api-hub.js scrape --model "firecrawl/scrape" --url "https://example.com"
 
-  # SMS Verification
+  # SMS Verification (OTP)
   node api-hub.js sms-verify --phone "+1234567890"
   node api-hub.js sms-check --phone "+1234567890" --code "123456"
-  node api-hub.js sms-send --phone "+1234567890" --template-id "your_template_id"
 
   # Email
   node api-hub.js send-email --to "user@example.com" --subject "Hello" --body "<p>Hi!</p>"
@@ -1299,22 +1269,6 @@ Examples:
         break
       }
 
-      case 'sms-send': {
-        if (!args.phone || !args['template-id']) {
-          console.error('Error: --phone and --template-id are required')
-          process.exit(1)
-        }
-        result = await smsSend({
-          phone: args.phone,
-          templateId: args['template-id'],
-          variables: args.variables ? JSON.parse(args.variables) : undefined,
-          from: args.from,
-        })
-        console.log(`\nSMS sent to: ${args.phone}`)
-        console.log(JSON.stringify(result, null, 2))
-        break
-      }
-
       case 'send-email': {
         // Support both --to (new) and --receivers (legacy)
         const toArg = args.to || args.receivers
@@ -1432,7 +1386,6 @@ module.exports = {
   // SMS/Verify
   smsVerify,
   smsCheck,
-  smsSend,
 
   // Email
   sendEmail,
