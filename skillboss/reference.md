@@ -7,6 +7,7 @@ Complete model list and detailed parameter documentation.
 ### Chat Completions
 
 **Bedrock (AWS Claude):**
+
 - `bedrock/claude-4-6-opus` - Claude 4.6 Opus (most powerful, 1M context, recommended for complex tasks)
 - `bedrock/claude-4-5-opus` - Claude 4.5 Opus (powerful reasoning model)
 - `bedrock/claude-4-5-sonnet` - Claude 4.5 Sonnet (balanced performance and cost)
@@ -16,6 +17,7 @@ Complete model list and detailed parameter documentation.
 - `bedrock/claude-3-5-sonnet` - Claude 3.5 Sonnet (v2)
 
 **OpenAI:**
+
 - `openai/gpt-5` - GPT-5 latest
 - `openai/gpt-5-mini` - GPT-5 Mini
 - `openai/gpt-4.1` - GPT-4.1
@@ -27,6 +29,7 @@ Complete model list and detailed parameter documentation.
 - `openai/o1` - O1 advanced reasoning
 
 **OpenRouter:**
+
 - `openrouter/deepseek/deepseek-r1` - DeepSeek R1
 - `openrouter/deepseek/deepseek-r1:online` - DeepSeek R1 Online
 - `openrouter/anthropic/claude-sonnet-4:nitro` - Claude Sonnet 4 Nitro
@@ -36,6 +39,7 @@ Complete model list and detailed parameter documentation.
 - `openrouter/moonshotai/kimi-k2-thinking` - Kimi K2 Thinking
 
 **Vertex (Google Cloud):**
+
 - `vertex/gemini-2.5-pro` - Gemini 2.5 Pro
 - `vertex/gemini-2.5-flash` - Gemini 2.5 Flash (快速)
 - `vertex/gemini-2.5-flash-lite-preview-06-17` - Gemini 2.5 Flash Lite
@@ -44,43 +48,57 @@ Complete model list and detailed parameter documentation.
 - `vertex/codestral-2501` - Mistral Codestral
 
 **Anthropic (Direct):**
+
 - `anthropic/claude-3-5-sonnet-20241022` - Claude 3.5 Sonnet
 
 **Minimax:**
+
 - `minimax/abab6.5s-chat` - Chinese optimized (fast)
 - `minimax/abab6.5g-chat` - Chinese optimized (general)
 
 **Perplexity:**
+
 - `perplexity/sonar-pro` - AI search (with citations)
 - `perplexity/sonar` - AI search
 
 ### Text-to-Speech
 
 **ElevenLabs:**
+
 - `elevenlabs/eleven_multilingual_v2` - 29 languages, highest quality
 - `elevenlabs/sound_generation` - Sound effects generation
 
 **Minimax:**
+
 - `minimax/speech-01-turbo` - Chinese TTS optimized
 
 **OpenAI:**
+
 - `openai/tts-1` - Standard quality
 - `openai/tts-1-hd` - HD quality
 
 **Replicate:**
+
 - `replicate/lucataco/xtts-v2` - XTTS v2
 
 ### Image Generation
 
 **Vertex (Recommended):**
+
 - `vertex/gemini-2.5-flash-image-preview` - Gemini 2.5 Flash Image (preferred)
 - `vertex/gemini-3-pro-image-preview` - Gemini 3 Pro Image
 
 **Replicate:**
+
 - `replicate/black-forest-labs/flux-schnell` - Fast generation
 - `replicate/black-forest-labs/flux-dev` - High quality
 - `replicate/lucataco/remove-bg` - Background removal
 - `replicate/851-labs/background-remover` - Background removal v2
+
+### Image Upscale & Transformation (FAL)
+
+- `fal/upscale` - Creative upscaler (2x or 4x)
+- `fal/img2img` - Image-to-image transformation (FLUX dev)
 
 ### Video Generation
 
@@ -98,15 +116,27 @@ Complete model list and detailed parameter documentation.
 - `perplexity/sonar-pro` - AI search with citations
 - `perplexity/sonar` - AI search
 - `scrapingdog/google_search` - Google search results
+- `linkup/search` - Structured web search (standard depth)
+- `linkup/search-deep` - Structured web search (deep depth)
+- `linkup/fetch` - URL-to-markdown fetcher
+
+### SMS/Verify (Prelude)
+
+- `prelude/verify-send` - Send OTP verification code
+- `prelude/verify-check` - Check OTP verification code
+- `prelude/notify-send` - Send SMS notification via template
+- `prelude/notify-batch` - Send batch SMS notifications
 
 ### Web Scraping
 
 **Firecrawl:**
+
 - `firecrawl/scrape` - Single page scraping
 - `firecrawl/extract` - AI structured extraction
 - `firecrawl/map` - Website sitemap
 
 **ScrapingDog:**
+
 - `scrapingdog/screenshot` - Web page screenshot
 - `scrapingdog/google_search` - Google search
 - `scrapingdog/google_images` - Google images
@@ -142,17 +172,17 @@ Chat completions with any supported model.
 node ./skillboss/scripts/api-hub.js chat [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--model` | Yes | Model identifier (e.g., `bedrock/claude-4-5-sonnet`) |
-| `--prompt` | Yes* | Single message prompt |
-| `--messages` | Yes* | JSON array of messages `[{"role":"user","content":"..."}]` |
-| `--system` | No | System prompt |
-| `--stream` | No | Enable streaming output |
-| `--max-tokens` | No | Maximum tokens in response |
-| `--temperature` | No | Sampling temperature (0-2) |
+| Option          | Required | Description                                                |
+| --------------- | -------- | ---------------------------------------------------------- |
+| `--model`       | Yes      | Model identifier (e.g., `bedrock/claude-4-5-sonnet`)       |
+| `--prompt`      | Yes\*    | Single message prompt                                      |
+| `--messages`    | Yes\*    | JSON array of messages `[{"role":"user","content":"..."}]` |
+| `--system`      | No       | System prompt                                              |
+| `--stream`      | No       | Enable streaming output                                    |
+| `--max-tokens`  | No       | Maximum tokens in response                                 |
+| `--temperature` | No       | Sampling temperature (0-2)                                 |
 
-*Either `--prompt` or `--messages` required.
+\*Either `--prompt` or `--messages` required.
 
 ### tts
 
@@ -162,12 +192,12 @@ Text-to-speech audio generation.
 node ./skillboss/scripts/api-hub.js tts [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--model` | Yes | Model identifier |
-| `--text` | Yes | Text to convert to speech |
-| `--output` | No | Output file path (default: auto-generated) |
-| `--voice-id` | No | Voice ID (ElevenLabs specific) |
+| Option       | Required | Description                                |
+| ------------ | -------- | ------------------------------------------ |
+| `--model`    | Yes      | Model identifier                           |
+| `--text`     | Yes      | Text to convert to speech                  |
+| `--output`   | No       | Output file path (default: auto-generated) |
+| `--voice-id` | No       | Voice ID (ElevenLabs specific)             |
 
 ### image
 
@@ -177,13 +207,13 @@ Image generation from text prompts.
 node ./skillboss/scripts/api-hub.js image [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--model` | Yes | Model identifier |
-| `--prompt` | Yes | Image description |
-| `--output` | No | Output file path |
-| `--size` | No | Image size (e.g., `1024x1024`) |
-| `--quality` | No | Quality setting (model-specific) |
+| Option      | Required | Description                      |
+| ----------- | -------- | -------------------------------- |
+| `--model`   | Yes      | Model identifier                 |
+| `--prompt`  | Yes      | Image description                |
+| `--output`  | No       | Output file path                 |
+| `--size`    | No       | Image size (e.g., `1024x1024`)   |
+| `--quality` | No       | Quality setting (model-specific) |
 
 ### video
 
@@ -193,11 +223,44 @@ Video generation from text prompts.
 node ./skillboss/scripts/api-hub.js video [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--model` | Yes | Model identifier |
-| `--prompt` | Yes | Video description |
-| `--output` | No | Output file path |
+| Option     | Required | Description       |
+| ---------- | -------- | ----------------- |
+| `--model`  | Yes      | Model identifier  |
+| `--prompt` | Yes      | Video description |
+| `--output` | No       | Output file path  |
+
+### upscale
+
+Image upscaling via FAL creative-upscaler.
+
+```bash
+node ./skillboss/scripts/api-hub.js upscale [options]
+```
+
+| Option            | Required | Description                              |
+| ----------------- | -------- | ---------------------------------------- |
+| `--image-url`     | Yes      | URL of image to upscale                  |
+| `--scale`         | No       | Upscale factor: 2 or 4 (default: 2)     |
+| `--output-format` | No       | "png" or "jpeg" (default: "png")         |
+| `--output`        | No       | Output file path                         |
+
+### img2img
+
+Image-to-image transformation via FAL FLUX dev.
+
+```bash
+node ./skillboss/scripts/api-hub.js img2img [options]
+```
+
+| Option            | Required | Description                                      |
+| ----------------- | -------- | ------------------------------------------------ |
+| `--image-url`     | Yes      | URL of source image                              |
+| `--prompt`        | Yes      | Transformation description                       |
+| `--strength`      | No       | Transform strength 0.0-1.0 (default: 0.75)      |
+| `--image-size`    | No       | Size preset: square_hd, portrait_4_3, etc.       |
+| `--output-format` | No       | "jpeg" or "png" (default: "jpeg")                |
+| `--num-images`    | No       | Number of images 1-4 (default: 1)                |
+| `--output`        | No       | Output file path                                 |
 
 ### music
 
@@ -207,12 +270,12 @@ Music generation from text prompts.
 node ./skillboss/scripts/api-hub.js music [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--model` | No | Model identifier (default: `replicate/elevenlabs/music`) |
-| `--prompt` | Yes | Music description |
-| `--duration` | No | Duration in seconds |
-| `--output` | No | Output file path |
+| Option       | Required | Description                                              |
+| ------------ | -------- | -------------------------------------------------------- |
+| `--model`    | No       | Model identifier (default: `replicate/elevenlabs/music`) |
+| `--prompt`   | Yes      | Music description                                        |
+| `--duration` | No       | Duration in seconds                                      |
+| `--output`   | No       | Output file path                                         |
 
 ### search
 
@@ -222,10 +285,10 @@ Web search queries.
 node ./skillboss/scripts/api-hub.js search [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--model` | Yes | Search provider model |
-| `--query` | Yes | Search query string |
+| Option    | Required | Description           |
+| --------- | -------- | --------------------- |
+| `--model` | Yes      | Search provider model |
+| `--query` | Yes      | Search query string   |
 
 ### scrape
 
@@ -235,13 +298,89 @@ Web page scraping.
 node ./skillboss/scripts/api-hub.js scrape [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--model` | Yes | Scraping provider model |
-| `--url` | Yes* | Single URL to scrape |
-| `--urls` | Yes* | JSON array of URLs |
+| Option    | Required | Description             |
+| --------- | -------- | ----------------------- |
+| `--model` | Yes      | Scraping provider model |
+| `--url`   | Yes\*    | Single URL to scrape    |
+| `--urls`  | Yes\*    | JSON array of URLs      |
 
-*Either `--url` or `--urls` required.
+\*Either `--url` or `--urls` required.
+
+### linkup-search
+
+Structured web search via Linkup.
+
+```bash
+node ./skillboss/scripts/api-hub.js linkup-search [options]
+```
+
+| Option              | Required | Description                                              |
+| ------------------- | -------- | -------------------------------------------------------- |
+| `--query`           | Yes      | Search query                                             |
+| `--output-type`     | No       | "searchResults", "sourcedAnswer", or "structured"        |
+| `--depth`           | No       | "standard" or "deep" (default: "standard")               |
+| `--schema`          | No       | JSON schema string (for structured output type)          |
+| `--include-domains` | No       | JSON array of domains to include                         |
+| `--exclude-domains` | No       | JSON array of domains to exclude                         |
+| `--from-date`       | No       | Start date filter (YYYY-MM-DD)                           |
+| `--to-date`         | No       | End date filter (YYYY-MM-DD)                             |
+| `--max-results`     | No       | Max results to return                                    |
+
+### linkup-fetch
+
+Fetch a URL and convert to markdown via Linkup.
+
+```bash
+node ./skillboss/scripts/api-hub.js linkup-fetch [options]
+```
+
+| Option             | Required | Description                                   |
+| ------------------ | -------- | --------------------------------------------- |
+| `--url`            | Yes      | URL to fetch and convert to markdown          |
+| `--render-js`      | No       | Render JavaScript before extracting           |
+| `--include-images` | No       | Include images in output                      |
+
+### sms-verify
+
+Send OTP verification code via Prelude.
+
+```bash
+node ./skillboss/scripts/api-hub.js sms-verify [options]
+```
+
+| Option        | Required | Description                    |
+| ------------- | -------- | ------------------------------ |
+| `--phone`     | Yes      | Phone number (E.164 format)    |
+| `--ip`        | No       | Client IP for fraud signals    |
+| `--device-id` | No       | Device ID for fraud signals    |
+
+### sms-check
+
+Check OTP verification code via Prelude.
+
+```bash
+node ./skillboss/scripts/api-hub.js sms-check [options]
+```
+
+| Option    | Required | Description                 |
+| --------- | -------- | --------------------------- |
+| `--phone` | Yes      | Phone number (E.164 format) |
+| `--code`  | Yes      | OTP code to verify          |
+
+### sms-send
+
+Send SMS notification via Prelude template.
+
+```bash
+node ./skillboss/scripts/api-hub.js sms-send [options]
+```
+
+| Option          | Required | Description                              |
+| --------------- | -------- | ---------------------------------------- |
+| `--phone`       | Yes      | Phone number (E.164 format)              |
+| `--template-id` | Yes      | Prelude template ID                      |
+| `--variables`   | No       | JSON object of template variables        |
+| `--from`        | No       | Sender number                            |
 
 ### send-email
 
@@ -251,12 +390,12 @@ Send a single email.
 node ./skillboss/scripts/api-hub.js send-email [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--to` | Yes | Recipient emails, comma-separated |
-| `--subject` | Yes | Email subject |
-| `--body` | Yes | HTML email body |
-| `--reply-to` | No | Reply-to addresses, comma-separated |
+| Option       | Required | Description                         |
+| ------------ | -------- | ----------------------------------- |
+| `--to`       | Yes      | Recipient emails, comma-separated   |
+| `--subject`  | Yes      | Email subject                       |
+| `--body`     | Yes      | HTML email body                     |
+| `--reply-to` | No       | Reply-to addresses, comma-separated |
 
 ### send-batch
 
@@ -266,12 +405,12 @@ Send templated batch emails.
 node ./skillboss/scripts/api-hub.js send-batch [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--subject` | Yes | Subject with `{{var}}` placeholders |
-| `--body` | Yes | HTML body with `{{var}}` placeholders |
-| `--receivers` | Yes | JSON array: `[{"email":"...","variables":{...}}]` |
-| `--reply-to` | No | Reply-to addresses |
+| Option        | Required | Description                                       |
+| ------------- | -------- | ------------------------------------------------- |
+| `--subject`   | Yes      | Subject with `{{var}}` placeholders               |
+| `--body`      | Yes      | HTML body with `{{var}}` placeholders             |
+| `--receivers` | Yes      | JSON array: `[{"email":"...","variables":{...}}]` |
+| `--reply-to`  | No       | Reply-to addresses                                |
 
 ### publish-static
 
@@ -281,12 +420,12 @@ Upload static files to R2 storage and deploy.
 node ./skillboss/scripts/serve-build.js publish-static <folder> [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `<folder>` | Yes | Path to folder with static files |
-| `--project-id` | No | Project identifier (auto-generated if omitted) |
-| `--version` | No | Version number for deployments |
-| `--api-url` | No | Override build API URL |
+| Option         | Required | Description                                    |
+| -------------- | -------- | ---------------------------------------------- |
+| `<folder>`     | Yes      | Path to folder with static files               |
+| `--project-id` | No       | Project identifier (auto-generated if omitted) |
+| `--version`    | No       | Version number for deployments                 |
+| `--api-url`    | No       | Override build API URL                         |
 
 ### publish-worker
 
@@ -296,17 +435,18 @@ Upload and deploy a Cloudflare Worker with bindings.
 node ./skillboss/scripts/serve-build.js publish-worker <folder> [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `<folder>` | Yes | Path to Worker source folder |
-| `--main` | No | Entry point file (auto-detected: `src/index.ts`, `index.js`, etc.) |
-| `--name` | No | Worker name (default: folder name) |
-| `--project-id` | No | Project identifier (auto-generated if omitted) |
-| `--version` | No | Version number for deployments |
-| `--api-url` | No | Override build API URL |
+| Option         | Required | Description                                                        |
+| -------------- | -------- | ------------------------------------------------------------------ |
+| `<folder>`     | Yes      | Path to Worker source folder                                       |
+| `--main`       | No       | Entry point file (auto-detected: `src/index.ts`, `index.js`, etc.) |
+| `--name`       | No       | Worker name (default: folder name)                                 |
+| `--project-id` | No       | Project identifier (auto-generated if omitted)                     |
+| `--version`    | No       | Version number for deployments                                     |
+| `--api-url`    | No       | Override build API URL                                             |
 
 **Automatic Configuration:**
 If `wrangler.toml` exists in the folder, the following are auto-detected:
+
 - Entry point (`main`)
 - Worker name (`name`)
 - D1 databases (`[[d1_databases]]`)
@@ -315,6 +455,7 @@ If `wrangler.toml` exists in the folder, the following are auto-detected:
 - Environment variables (`[vars]`)
 
 **Example wrangler.toml:**
+
 ```toml
 name = "my-api"
 main = "src/index.ts"
@@ -347,6 +488,7 @@ my-worker/
 ```
 
 Or use a single schema file:
+
 ```
 my-worker/
 ├── src/
@@ -357,6 +499,7 @@ my-worker/
 ```
 
 Migration files are executed in alphabetical order after D1 databases are provisioned. Example `schema.sql`:
+
 ```sql
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
@@ -381,12 +524,13 @@ Connect a Stripe Express account for accepting payments.
 node ./skillboss/scripts/stripe-connect.js [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--status` | No | Only check current account status |
-| `--no-browser` | No | Don't auto-open browser (print URL instead) |
+| Option         | Required | Description                                 |
+| -------------- | -------- | ------------------------------------------- |
+| `--status`     | No       | Only check current account status           |
+| `--no-browser` | No       | Don't auto-open browser (print URL instead) |
 
 **Flow:**
+
 1. Checks if Stripe account is already connected
 2. If not, creates a Stripe Express account
 3. Opens browser for Stripe's onboarding (KYC, bank verification)
@@ -401,12 +545,12 @@ Generic endpoint access for any API Hub endpoint.
 node ./skillboss/scripts/api-hub.js run [options]
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--model` | Yes | Full endpoint model path |
-| `--inputs` | Yes | JSON object with endpoint-specific inputs |
-| `--stream` | No | Enable streaming |
-| `--output` | No | Output file path |
+| Option     | Required | Description                               |
+| ---------- | -------- | ----------------------------------------- |
+| `--model`  | Yes      | Full endpoint model path                  |
+| `--inputs` | Yes      | JSON object with endpoint-specific inputs |
+| `--stream` | No       | Enable streaming                          |
+| `--output` | No       | Output file path                          |
 
 ---
 
@@ -424,10 +568,10 @@ node ./skillboss/scripts/api-hub.js run [options]
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `apiKey` | Your SkillBoss API Hub key (injected automatically) |
-| `sender` | Email sender (auto-determined from user: `name@name.skillboss.live`) |
-| `baseUrl` | API Hub endpoint |
-| `buildApiUrl` | Build service for static/Worker uploads |
-| `stripeConnectUrl` | Stripe Connect API endpoint (for payment setup) |
+| Field              | Description                                                          |
+| ------------------ | -------------------------------------------------------------------- |
+| `apiKey`           | Your SkillBoss API Hub key (injected automatically)                  |
+| `sender`           | Email sender (auto-determined from user: `name@name.skillboss.live`) |
+| `baseUrl`          | API Hub endpoint                                                     |
+| `buildApiUrl`      | Build service for static/Worker uploads                              |
+| `stripeConnectUrl` | Stripe Connect API endpoint (for payment setup)                      |
