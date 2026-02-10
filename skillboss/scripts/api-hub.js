@@ -12,11 +12,12 @@ const { fetchWithRetry } = require('./lib/fetch-retry')
  * Provides unified access to multiple AI/ML providers:
  * - Chat: bedrock, openai, openrouter, vertex, anthropic, minimax, perplexity
  * - TTS: elevenlabs, minimax, openai, replicate
- * - Image: vertex/gemini-3-pro-image-preview, replicate/flux
- * - Search: scrapingdog, perplexity, firecrawl
+ * - Image: vertex/gemini-3-pro-image-preview, replicate/flux, fal/img2img
+ * - Upscale: fal/upscale (creative-upscaler)
+ * - Search: scrapingdog, perplexity, firecrawl, linkup (structured search + fetch)
  * - Video: minimax
  * - Document: reducto (parse, extract, split, edit)
- * - SMS/Verify: prelude (OTP send/check)
+ * - SMS/Verify: prelude (OTP send/check, notify)
  * - Email: aws/ses
  *
  * Usage:
@@ -25,10 +26,15 @@ const { fetchWithRetry } = require('./lib/fetch-retry')
  *   node api-hub.js tts --model "elevenlabs/eleven_multilingual_v2" --text "Hello" --output audio.mp3
  *   node api-hub.js image --model "vertex/gemini-3-pro-image-preview" --prompt "A sunset" [--output image.png]
  *   node api-hub.js image --model "replicate/black-forest-labs/flux-schnell" --prompt "A sunset" [--output image.png]
+ *   node api-hub.js upscale --image-url "https://example.com/photo.jpg" [--scale 2] [--output upscaled.png]
+ *   node api-hub.js img2img --image-url "https://example.com/photo.jpg" --prompt "watercolor painting" [--output result.jpg]
  *   node api-hub.js search --model "scrapingdog/google_search" --query "nodejs"
+ *   node api-hub.js linkup-search --query "latest AI news" [--output-type searchResults|sourcedAnswer|structured] [--depth standard|deep]
+ *   node api-hub.js linkup-fetch --url "https://example.com" [--render-js]
  *   node api-hub.js scrape --model "firecrawl/scrape" --url "https://example.com"
  *   node api-hub.js sms-verify --phone "+1234567890"
  *   node api-hub.js sms-check --phone "+1234567890" --code "123456"
+ *   node api-hub.js sms-send --phone "+1234567890" --template-id "your_template_id"
  *   node api-hub.js send-email --to "a@b.com" --subject "Subject" --body "<html>...</html>"
  *   node api-hub.js send-batch --subject "Hello {{name}}" --body "<html>...</html>" --receivers '[...]'
  */
@@ -520,6 +526,61 @@ async function image(params) {
 }
 
 /**
+ * Image upscale command (FAL creative-upscaler)
+ * @param {object} params - Upscale parameters
+ * @param {string} params.imageUrl - URL of image to upscale
+ * @param {number} [params.scale] - Upscale factor: 2 or 4 (default: 2)
+ * @param {string} [params.outputFormat] - "png" or "jpeg" (default: "png")
+ * @param {string} [params.output] - Output file path
+ * @returns {Promise<object>} Upscale result {image_url, images}
+ */
+async function upscale(params) {
+  if (!params.imageUrl) {
+    throw new Error('--image-url is required for upscale')
+  }
+
+  const inputs = {
+    image_url: params.imageUrl,
+    scale: params.scale || 2,
+    output_format: params.outputFormat || 'png',
+  }
+
+  return run({ model: 'fal/upscale', inputs, output: params.output })
+}
+
+/**
+ * Image-to-image transformation command (FAL FLUX dev)
+ * @param {object} params - img2img parameters
+ * @param {string} params.imageUrl - URL of source image
+ * @param {string} params.prompt - Transformation description
+ * @param {number} [params.strength] - Transform strength 0.0-1.0 (default: 0.75)
+ * @param {string} [params.imageSize] - Size preset: square_hd, square, portrait_4_3, landscape_16_9, etc. (default: square_hd)
+ * @param {string} [params.outputFormat] - "jpeg" or "png" (default: "jpeg")
+ * @param {number} [params.numImages] - Number of images 1-4 (default: 1)
+ * @param {string} [params.output] - Output file path
+ * @returns {Promise<object>} img2img result {image_url, images}
+ */
+async function img2img(params) {
+  if (!params.imageUrl) {
+    throw new Error('--image-url is required for img2img')
+  }
+  if (!params.prompt) {
+    throw new Error('--prompt is required for img2img')
+  }
+
+  const inputs = {
+    image_url: params.imageUrl,
+    prompt: params.prompt,
+    strength: params.strength || 0.75,
+    image_size: params.imageSize || 'square_hd',
+    output_format: params.outputFormat || 'jpeg',
+    num_images: params.numImages || 1,
+  }
+
+  return run({ model: 'fal/img2img', inputs, output: params.output })
+}
+
+/**
  * Web search command
  * @param {object} params - Search parameters
  * @param {string} params.model - Model in "vendor/model" format
@@ -579,6 +640,68 @@ async function scrape(params) {
 }
 
 /**
+ * Linkup structured web search
+ * @param {object} params - Linkup search parameters
+ * @param {string} params.query - Search query
+ * @param {string} [params.outputType] - "searchResults" | "sourcedAnswer" | "structured" (default: "searchResults")
+ * @param {string} [params.depth] - "standard" | "deep" (default: "standard")
+ * @param {string} [params.structuredOutputSchema] - JSON schema string for structured mode
+ * @param {string[]} [params.includeDomains] - Only search these domains
+ * @param {string[]} [params.excludeDomains] - Exclude these domains
+ * @param {string} [params.fromDate] - Start date filter (YYYY-MM-DD)
+ * @param {string} [params.toDate] - End date filter (YYYY-MM-DD)
+ * @param {number} [params.maxResults] - Max results to return
+ * @param {boolean} [params.includeImages] - Include images in results
+ * @returns {Promise<object>} Search results in format matching outputType
+ */
+async function linkupSearch(params) {
+  if (!params.query) {
+    throw new Error('--query is required for linkup-search')
+  }
+
+  const inputs = {
+    q: params.query,
+    depth: params.depth || 'standard',
+    outputType: params.outputType || 'searchResults',
+  }
+
+  if (params.structuredOutputSchema) inputs.structuredOutputSchema = params.structuredOutputSchema
+  if (params.includeDomains) inputs.includeDomains = params.includeDomains
+  if (params.excludeDomains) inputs.excludeDomains = params.excludeDomains
+  if (params.fromDate) inputs.fromDate = params.fromDate
+  if (params.toDate) inputs.toDate = params.toDate
+  if (params.maxResults) inputs.maxResults = params.maxResults
+  if (params.includeImages !== undefined) inputs.includeImages = params.includeImages
+
+  const model = params.depth === 'deep' ? 'linkup/search-deep' : 'linkup/search'
+  return run({ model, inputs })
+}
+
+/**
+ * Linkup URL-to-markdown fetcher
+ * @param {object} params - Linkup fetch parameters
+ * @param {string} params.url - URL to fetch and convert to markdown
+ * @param {boolean} [params.renderJs] - Render JavaScript before extracting (default: false)
+ * @param {boolean} [params.includeImages] - Include images in output (default: false)
+ * @param {boolean} [params.includeRawHtml] - Include raw HTML in response (default: false)
+ * @returns {Promise<object>} { content, title, url }
+ */
+async function linkupFetch(params) {
+  if (!params.url) {
+    throw new Error('--url is required for linkup-fetch')
+  }
+
+  const inputs = {
+    url: params.url,
+    renderJs: params.renderJs || false,
+    includeImages: params.includeImages || false,
+    includeRawHtml: params.includeRawHtml || false,
+  }
+
+  return run({ model: 'linkup/fetch', inputs })
+}
+
+/**
  * Video generation command
  * @param {object} params - Video parameters
  * @param {string} params.model - Model in "vendor/model" format
@@ -615,31 +738,6 @@ async function video(params) {
   } else {
     // MiniMax and others use 'prompt'
     inputs.prompt = params.prompt
-  }
-
-  return run({ model: params.model, inputs, output: params.output })
-}
-
-/**
- * Music generation command
- * @param {object} params - Music parameters
- * @param {string} params.model - Model in "vendor/model" format
- * @param {string} params.prompt - Music description prompt
- * @param {string} [params.duration] - Duration in seconds
- * @param {string} [params.output] - Output file path
- * @returns {Promise<object>} Music generation result
- */
-async function music(params) {
-  if (!params.prompt) {
-    throw new Error('--prompt is required for music generation')
-  }
-
-  const inputs = {
-    prompt: params.prompt,
-  }
-
-  if (params.duration) {
-    inputs.duration = parseInt(params.duration)
   }
 
   return run({ model: params.model, inputs, output: params.output })
@@ -804,6 +902,33 @@ async function smsCheck(params) {
 }
 
 /**
+ * Send SMS notification via Prelude
+ * @param {object} params - Notify parameters
+ * @param {string} params.phone - Phone number in E.164 format
+ * @param {string} params.templateId - Prelude template ID (configured in Prelude dashboard)
+ * @param {object} [params.variables] - Template variables
+ * @param {string} [params.from] - Sender number
+ * @returns {Promise<object>} Send result
+ */
+async function smsSend(params) {
+  if (!params.phone) {
+    throw new Error('--phone is required (E.164 format, e.g. +1234567890)')
+  }
+  if (!params.templateId) {
+    throw new Error('--template-id is required (configured in Prelude dashboard)')
+  }
+
+  const inputs = {
+    template_id: params.templateId,
+    to: params.phone,
+  }
+  if (params.variables) inputs.variables = params.variables
+  if (params.from) inputs.from = params.from
+
+  return run({ model: 'prelude/notify-send', inputs })
+}
+
+/**
  * List available models from API Hub
  * @param {object} [params] - List parameters
  * @param {string} [params.type] - Filter by category (chat, tts, image, video, scraping, etc.)
@@ -869,15 +994,19 @@ Commands:
   chat         Chat completions (bedrock, openai, anthropic, openrouter, vertex, minimax)
   tts          Text-to-speech (elevenlabs, minimax, openai, mm/qwen3-tts-flash)
   image        Image generation (vertex/gemini, replicate/flux, mm/img)
+  upscale      Image upscaling (fal/upscale)
+  img2img      Image-to-image transformation (fal/img2img)
   multimodal   Video/image/audio understanding (mm/qwen3-vl-plus, mm/qwen3-vl-max)
   search       Web search (scrapingdog, perplexity)
+  linkup-search Structured web search (linkup: searchResults, sourcedAnswer, structured)
+  linkup-fetch  URL-to-markdown fetcher (linkup)
   scrape       Web scraping (scrapingdog, firecrawl)
   video        Video generation (minimax, vertex/veo, mm/t2v, mm/i2v)
-  music        Music generation (replicate/elevenlabs, replicate/meta/musicgen)
   document     Document processing (reducto: parse, extract, split, edit)
   gamma        Presentations (gamma)
   sms-verify   Send OTP verification code (prelude)
   sms-check    Check OTP verification code (prelude)
+  sms-send     Send SMS notification (prelude)
   send-email   Send a single email (aws/ses)
   send-batch   Send batch emails with templates
   version      Check for updates and show current/latest version
@@ -909,14 +1038,18 @@ Examples:
   node api-hub.js image --model "vertex/gemini-3-pro-image-preview" --prompt "A sunset"
   node api-hub.js image --prompt "A sunset" --size "1024*1536" --output image.png
 
+  # Upscale (FAL)
+  node api-hub.js upscale --image-url "https://example.com/photo.jpg" --output upscaled.png
+  node api-hub.js upscale --image-url "https://example.com/photo.jpg" --scale 4 --output upscaled.png
+
+  # Image-to-Image (FAL FLUX dev)
+  node api-hub.js img2img --image-url "https://example.com/photo.jpg" --prompt "watercolor painting" --output result.jpg
+  node api-hub.js img2img --image-url "https://example.com/photo.jpg" --prompt "oil painting" --strength 0.9 --output result.jpg
+
   # Video (default: mm/t2v for text-to-video, mm/i2v for image-to-video)
   node api-hub.js video --prompt "A cat walking" --duration 5 --output video.mp4
   node api-hub.js video --prompt "Animate this" --image "https://example.com/cat.jpg" --duration 5 --output video.mp4
   node api-hub.js video --model "vertex/veo-3.1-fast-generate-preview" --prompt "A sunset" --output video.mp4
-
-  # Music (default: replicate/elevenlabs/music)
-  node api-hub.js music --prompt "upbeat electronic dance track" --output music.mp3
-  node api-hub.js music --model "replicate/meta/musicgen" --prompt "calm acoustic guitar" --duration 30
 
   # Document Processing
   node api-hub.js document --model "reducto/parse" --url "https://example.com/doc.pdf"
@@ -926,9 +1059,17 @@ Examples:
   node api-hub.js search --model "scrapingdog/google_search" --query "nodejs"
   node api-hub.js scrape --model "firecrawl/scrape" --url "https://example.com"
 
-  # SMS Verification (OTP)
+  # Linkup (structured search + URL fetch)
+  node api-hub.js linkup-search --query "latest AI news"
+  node api-hub.js linkup-search --query "population of Tokyo" --output-type structured --schema '{"type":"object","properties":{"city":{"type":"string"},"population":{"type":"number"}}}'
+  node api-hub.js linkup-search --query "compare React vs Vue" --output-type sourcedAnswer --depth deep
+  node api-hub.js linkup-fetch --url "https://example.com"
+  node api-hub.js linkup-fetch --url "https://example.com" --render-js
+
+  # SMS Verification
   node api-hub.js sms-verify --phone "+1234567890"
   node api-hub.js sms-check --phone "+1234567890" --code "123456"
+  node api-hub.js sms-send --phone "+1234567890" --template-id "your_template_id"
 
   # Email
   node api-hub.js send-email --to "user@example.com" --subject "Hello" --body "<p>Hi!</p>"
@@ -1089,6 +1230,49 @@ Examples:
         break
       }
 
+      case 'upscale': {
+        if (!args['image-url']) {
+          console.error('Error: --image-url is required')
+          process.exit(1)
+        }
+        result = await upscale({
+          imageUrl: args['image-url'],
+          scale: args.scale ? parseInt(args.scale) : undefined,
+          outputFormat: args['output-format'],
+          output: args.output,
+        })
+        if (args.output) {
+          console.log(`Upscaled image saved to: ${args.output}`)
+          if (result.url) console.log(`URL: ${result.url}`)
+        } else {
+          console.log(JSON.stringify(result, null, 2))
+        }
+        break
+      }
+
+      case 'img2img': {
+        if (!args['image-url'] || !args.prompt) {
+          console.error('Error: --image-url and --prompt are required')
+          process.exit(1)
+        }
+        result = await img2img({
+          imageUrl: args['image-url'],
+          prompt: args.prompt,
+          strength: args.strength ? parseFloat(args.strength) : undefined,
+          imageSize: args['image-size'],
+          outputFormat: args['output-format'],
+          numImages: args['num-images'] ? parseInt(args['num-images']) : undefined,
+          output: args.output,
+        })
+        if (args.output) {
+          console.log(`Transformed image saved to: ${args.output}`)
+          if (result.url) console.log(`URL: ${result.url}`)
+        } else {
+          console.log(JSON.stringify(result, null, 2))
+        }
+        break
+      }
+
       case 'search': {
         if (!args.model || !args.query) {
           console.error('Error: --model and --query are required')
@@ -1116,6 +1300,42 @@ Examples:
         break
       }
 
+      case 'linkup-search': {
+        if (!args.query) {
+          console.error('Error: --query is required')
+          process.exit(1)
+        }
+        result = await linkupSearch({
+          query: args.query,
+          outputType: args['output-type'],
+          depth: args.depth,
+          structuredOutputSchema: args.schema,
+          includeDomains: args['include-domains'] ? JSON.parse(args['include-domains']) : undefined,
+          excludeDomains: args['exclude-domains'] ? JSON.parse(args['exclude-domains']) : undefined,
+          fromDate: args['from-date'],
+          toDate: args['to-date'],
+          maxResults: args['max-results'] ? parseInt(args['max-results']) : undefined,
+          includeImages: args['include-images'] ? args['include-images'] === 'true' : undefined,
+        })
+        console.log(JSON.stringify(result, null, 2))
+        break
+      }
+
+      case 'linkup-fetch': {
+        if (!args.url) {
+          console.error('Error: --url is required')
+          process.exit(1)
+        }
+        result = await linkupFetch({
+          url: args.url,
+          renderJs: args['render-js'] === true || args['render-js'] === 'true',
+          includeImages: args['include-images'] === true || args['include-images'] === 'true',
+          includeRawHtml: args['include-raw-html'] === true || args['include-raw-html'] === 'true',
+        })
+        console.log(JSON.stringify(result, null, 2))
+        break
+      }
+
       case 'video': {
         if (!args.prompt) {
           console.error('Error: --prompt is required')
@@ -1133,29 +1353,6 @@ Examples:
         })
         if (args.output) {
           console.log(`Video saved to: ${args.output}`)
-          if (result.url) {
-            console.log(`URL: ${result.url}`)
-          }
-        } else {
-          console.log(JSON.stringify(result, null, 2))
-        }
-        break
-      }
-
-      case 'music': {
-        if (!args.prompt) {
-          console.error('Error: --prompt is required')
-          process.exit(1)
-        }
-        const musicModel = args.model || 'replicate/elevenlabs/music'
-        result = await music({
-          model: musicModel,
-          prompt: args.prompt,
-          duration: args.duration,
-          output: args.output,
-        })
-        if (args.output) {
-          console.log(`Music saved to: ${args.output}`)
           if (result.url) {
             console.log(`URL: ${result.url}`)
           }
@@ -1269,6 +1466,22 @@ Examples:
         break
       }
 
+      case 'sms-send': {
+        if (!args.phone || !args['template-id']) {
+          console.error('Error: --phone and --template-id are required')
+          process.exit(1)
+        }
+        result = await smsSend({
+          phone: args.phone,
+          templateId: args['template-id'],
+          variables: args.variables ? JSON.parse(args.variables) : undefined,
+          from: args.from,
+        })
+        console.log(`\nSMS sent to: ${args.phone}`)
+        console.log(JSON.stringify(result, null, 2))
+        break
+      }
+
       case 'send-email': {
         // Support both --to (new) and --receivers (legacy)
         const toArg = args.to || args.receivers
@@ -1374,18 +1587,24 @@ module.exports = {
   chat,
   tts,
   image,
+  upscale,
+  img2img,
   multimodal,
   search,
   scrape,
   video,
-  music,
   document,
   gamma,
   listModels,
 
+  // Linkup
+  linkupSearch,
+  linkupFetch,
+
   // SMS/Verify
   smsVerify,
   smsCheck,
+  smsSend,
 
   // Email
   sendEmail,
