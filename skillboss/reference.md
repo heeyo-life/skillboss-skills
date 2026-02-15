@@ -199,6 +199,22 @@ node ./skillboss/scripts/api-hub.js tts [options]
 | `--output`   | No       | Output file path (default: auto-generated) |
 | `--voice-id` | No       | Voice ID (ElevenLabs specific)             |
 
+### stt
+
+Speech-to-text transcription from audio files.
+
+```bash
+node ./skillboss/scripts/api-hub.js stt [options]
+```
+
+| Option       | Required | Description                                          |
+| ------------ | -------- | ---------------------------------------------------- |
+| `--file`     | Yes      | Local audio file path (mp3, wav, m4a, etc.)          |
+| `--model`    | No       | Model identifier (default: `openai/whisper-1`)       |
+| `--prompt`   | No       | Prompt to guide transcription style                  |
+| `--language` | No       | Language code (e.g., `en`, `es`, `zh`)               |
+| `--output`   | No       | Output file path to save transcript                  |
+
 ### image
 
 Image generation from text prompts.
