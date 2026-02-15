@@ -16,6 +16,7 @@ Use this skill when the user wants to:
 - **Accept payments**: Stripe integration for subscriptions, one-time payments, e-commerce
 - **Add authentication**: Login/signup with Google OAuth or email OTP
 - **Generate AI content**: Images (Gemini, Flux, DALL-E), audio/TTS (ElevenLabs, Minimax), music (MusicGen, Lyria), videos (Veo), chat (50+ LLMs)
+- **HuggingFace models**: Any model on huggingface.co works as `huggingface/{org}/{model}` — chat, image, video, STT, embedding, inference
 - **Image processing**: Upscale images (FAL creative-upscaler), image-to-image transformation (FAL FLUX dev)
 - **Web search & fetch**: Structured search with Linkup (searchResults, sourcedAnswer, structured), URL-to-markdown fetching
 - **SMS verification**: Phone number verification via OTP (send code, check code) using Prelude
@@ -34,6 +35,18 @@ These examples assume you are in your AI tool's skills directory (the folder con
 node ./skillboss/scripts/api-hub.js chat --model "bedrock/claude-4-6-opus" --prompt "Solve this complex reasoning problem"
 node ./skillboss/scripts/api-hub.js chat --model "bedrock/claude-4-5-sonnet" --prompt "Explain quantum computing"
 node ./skillboss/scripts/api-hub.js chat --model "openai/gpt-5" --prompt "Write a haiku" --stream
+```
+
+### HuggingFace (any model from huggingface.co/models):
+```bash
+# Chat - any text-generation model works
+node ./skillboss/scripts/api-hub.js chat --model "huggingface/meta-llama/Llama-3-8B-Instruct" --prompt "Hello"
+node ./skillboss/scripts/api-hub.js chat --model "huggingface/zai-org/GLM-5" --prompt "Hello" --stream
+
+# Other tasks via /run with task parameter
+node ./skillboss/scripts/api-hub.js run --model "huggingface/BAAI/bge-small-en-v1.5" --inputs '{"task":"embedding","input":"hello world"}'
+node ./skillboss/scripts/api-hub.js run --model "huggingface/stabilityai/stable-diffusion-xl-base-1.0" --inputs '{"task":"image","prompt":"a sunset"}' --output /tmp/image.png
+node ./skillboss/scripts/api-hub.js stt --file recording.mp3 --model "huggingface/openai/whisper-large-v3"
 ```
 
 ### Generate images:
@@ -72,6 +85,12 @@ node ./skillboss/scripts/api-hub.js document --model "reducto/extract" --url "ht
 ### Text-to-speech:
 ```bash
 node ./skillboss/scripts/api-hub.js tts --model "minimax/speech-01-turbo" --text "Hello world" --output /tmp/hello.mp3
+```
+
+### Speech-to-text:
+```bash
+node ./skillboss/scripts/api-hub.js stt --file recording.mp3
+node ./skillboss/scripts/api-hub.js stt --file interview.wav --language en --output /tmp/transcript.txt
 ```
 
 ### SMS verification (OTP):
@@ -131,6 +150,7 @@ node ./skillboss/scripts/stripe-connect.js
 |---------|-------------|-------------|
 | `chat` | Chat completions (model required) | `--model`, `--prompt`/`--messages`, `--system`, `--stream` |
 | `tts` | Text-to-speech (model required) | `--model`, `--text`, `--voice-id`, `--output` |
+| `stt` | Speech-to-text (default: `openai/whisper-1`) | `--file`, `--model`, `--prompt`, `--language`, `--output` |
 | `image` | Image generation (default: `mm/img`) | `--prompt`, `--size`, `--output`, `--model` |
 | `upscale` | Image upscaling (fal/upscale) | `--image-url`, `--scale`, `--output` |
 | `img2img` | Image-to-image transformation (fal/img2img) | `--image-url`, `--prompt`, `--strength`, `--output` |
@@ -157,9 +177,11 @@ node ./skillboss/scripts/stripe-connect.js
 
 | Category | Models |
 |----------|--------|
-| Chat | `bedrock/claude-4-6-opus`, `bedrock/claude-4-5-sonnet`, `openai/gpt-5`, `openrouter/deepseek/deepseek-r1`, `vertex/gemini-2.5-flash` |
+| Chat | `bedrock/claude-4-6-opus`, `bedrock/claude-4-5-sonnet`, `openai/gpt-5`, `openrouter/deepseek/deepseek-r1`, `vertex/gemini-2.5-flash`, `huggingface/{any-model}` |
 | TTS | `minimax/speech-01-turbo`, `elevenlabs/eleven_multilingual_v2` |
-| Image | `mm/img`, `vertex/gemini-3-pro-image-preview`, `replicate/black-forest-labs/flux-schnell` |
+| STT | `openai/whisper-1`, `huggingface/openai/whisper-large-v3` |
+| Image | `mm/img`, `vertex/gemini-3-pro-image-preview`, `replicate/black-forest-labs/flux-schnell`, `huggingface/stabilityai/stable-diffusion-xl-base-1.0` |
+| Embedding | `huggingface/BAAI/bge-small-en-v1.5`, `huggingface/{any-embedding-model}` |
 | Upscale | `fal/upscale` (creative-upscaler) |
 | Img2Img | `fal/img2img` (FLUX dev) |
 | Search | `perplexity/sonar-pro`, `scrapingdog/google_search`, `linkup/search`, `linkup/search-deep` |
@@ -326,9 +348,9 @@ SkillBoss includes workflow guides for common tasks. Read the corresponding guid
 | Email Campaign | `./skillboss/workflows/email-campaign/README.md` | Send batch marketing emails |
 | Content Creation | `./skillboss/workflows/content-creator/README.md` | Create videos, graphics content |
 | Login Integration | `./skillboss/workflows/login-integration/README.md` | Add authentication to React apps |
+| E-Commerce | `./skillboss/workflows/ecommerce/README.md` | Add Stripe payments to site |
 
 > 💰 **Monthly Cost:** Adding login integration costs 50 credits/month ($2.50/month) per project.
-| E-Commerce | `./skillboss/workflows/ecommerce/README.md` | Add Stripe payments to site |
 
 **How to use:** When the user requests a workflow task (e.g., "design a logo"), read the corresponding README.md and follow the workflow steps.
 
@@ -571,6 +593,32 @@ async function textToSpeech(text: string): Promise<ArrayBuffer> {
 }
 
 // ============================================================================
+// SPEECH-TO-TEXT
+// ============================================================================
+async function speechToText(audioBuffer: ArrayBuffer, filename: string): Promise<string> {
+  const base64Audio = Buffer.from(audioBuffer).toString('base64')
+
+  const response = await fetch(`${API_BASE}/run`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SKILLBOSS_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'openai/whisper-1',
+      inputs: {
+        audio_data: base64Audio,
+        filename  // e.g., "recording.mp3"
+      }
+    })
+  })
+  const data = await response.json()
+
+  // Response: {text: "transcribed text here"}
+  return data.text
+}
+
+// ============================================================================
 // MUSIC GENERATION
 // ============================================================================
 async function generateMusic(prompt: string, duration?: number): Promise<string> {
@@ -757,6 +805,7 @@ async function extractFromDocument(url: string, schema: object): Promise<object>
 | Image | vertex/gemini-3-pro-image-preview | `generated_images[0]` |
 | Image | replicate/flux-* | `data[0]` (array of URLs) |
 | TTS | minimax/speech-01-turbo, elevenlabs/* | Binary audio (use `response.arrayBuffer()`) |
+| STT | openai/whisper-1 | `text` |
 | Music | replicate/elevenlabs/music, replicate/meta/musicgen | `audio_url` |
 | Video | mm/t2v, mm/i2v | `video_url` |
 | Video | vertex/veo-* | `generatedSamples[0].video.uri` or `videos[0]` |
