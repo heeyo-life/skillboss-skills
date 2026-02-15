@@ -348,9 +348,9 @@ SkillBoss includes workflow guides for common tasks. Read the corresponding guid
 | Email Campaign | `./skillboss/workflows/email-campaign/README.md` | Send batch marketing emails |
 | Content Creation | `./skillboss/workflows/content-creator/README.md` | Create videos, graphics content |
 | Login Integration | `./skillboss/workflows/login-integration/README.md` | Add authentication to React apps |
+| E-Commerce | `./skillboss/workflows/ecommerce/README.md` | Add Stripe payments to site |
 
 > 💰 **Monthly Cost:** Adding login integration costs 50 credits/month ($2.50/month) per project.
-| E-Commerce | `./skillboss/workflows/ecommerce/README.md` | Add Stripe payments to site |
 
 **How to use:** When the user requests a workflow task (e.g., "design a logo"), read the corresponding README.md and follow the workflow steps.
 
