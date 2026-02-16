@@ -19,6 +19,11 @@ jobs:
         with:
           fetch-depth: 10 # For changelog generation
 
+      - name: Debug credentials
+        run: |
+          echo "Account ID: $CLOUDFLARE_ACCOUNT_ID"
+          echo "Token prefix: ${CLOUDFLARE_API_TOKEN:0:8}..."
+
       - name: Get version from config
         id: version
         run: |
