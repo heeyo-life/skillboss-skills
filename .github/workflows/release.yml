@@ -21,8 +21,10 @@ jobs:
 
       - name: Debug credentials
         run: |
-          echo "Account ID: $CLOUDFLARE_ACCOUNT_ID"
+          echo "Account ID chars: $(echo $CLOUDFLARE_ACCOUNT_ID | cut -c1-8)-$(echo $CLOUDFLARE_ACCOUNT_ID | cut -c9-16)-$(echo $CLOUDFLARE_ACCOUNT_ID | cut -c17-24)-$(echo $CLOUDFLARE_ACCOUNT_ID | cut -c25-32)"
+          echo "Account ID length: ${#CLOUDFLARE_ACCOUNT_ID}"
           echo "Token prefix: ${CLOUDFLARE_API_TOKEN:0:8}..."
+          npx wrangler r2 bucket list 2>&1 | head -20 || echo "bucket list failed"
 
       - name: Get version from config
         id: version
