@@ -18,7 +18,7 @@
  *
  * HuggingFace Dynamic Routing:
  * - Any model on huggingface.co works as "huggingface/{org}/{model}" without pre-registration
- * - Chat: node api-hub.js chat --model "huggingface/meta-llama/Llama-3-8B-Instruct" --prompt "Hello"
+ * - Chat: node api-hub.js chat --model "huggingface/meta-llama/Llama-3.1-8B-Instruct" --prompt "Hello"
  * - Other tasks via /run: --inputs '{"task":"embedding"}' or '{"task":"image"}' etc.
  *
  * Usage:
@@ -124,7 +124,7 @@ Examples:
   # Chat
   node api-hub.js chat --model "bedrock/claude-4-sonnet" --prompt "Hello"
   node api-hub.js chat --model "openrouter/deepseek/deepseek-r1" --prompt "Hello" --stream
-  node api-hub.js chat --model "huggingface/meta-llama/Llama-3-8B-Instruct" --prompt "Hello"
+  node api-hub.js chat --model "huggingface/meta-llama/Llama-3.1-8B-Instruct" --prompt "Hello"
 
   # HuggingFace (any model from huggingface.co/models works)
   node api-hub.js chat --model "huggingface/zai-org/GLM-5" --prompt "Hello" --stream
