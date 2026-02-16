@@ -40,7 +40,7 @@ node ./skillboss/scripts/api-hub.js chat --model "openai/gpt-5" --prompt "Write 
 ### HuggingFace (any model from huggingface.co/models):
 ```bash
 # Chat - any text-generation model works
-node ./skillboss/scripts/api-hub.js chat --model "huggingface/meta-llama/Llama-3-8B-Instruct" --prompt "Hello"
+node ./skillboss/scripts/api-hub.js chat --model "huggingface/meta-llama/Llama-3.1-8B-Instruct" --prompt "Hello"
 node ./skillboss/scripts/api-hub.js chat --model "huggingface/zai-org/GLM-5" --prompt "Hello" --stream
 
 # Other tasks via /run with task parameter
