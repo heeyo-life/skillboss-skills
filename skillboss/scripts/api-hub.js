@@ -55,6 +55,7 @@ const { search, scrape, linkupSearch, linkupFetch } = require('./commands/search
 const { sendEmail, sendBatchEmails } = require('./commands/email')
 const { smsVerify, smsCheck, smsSend } = require('./commands/sms')
 const { gamma, document } = require('./commands/document')
+const { music } = require('./commands/music')
 const { listModels } = require('./commands/models')
 
 // CLI argument parsing
@@ -102,6 +103,7 @@ Commands:
   linkup-fetch  URL-to-markdown fetcher (linkup)
   scrape       Web scraping (scrapingdog, firecrawl)
   video        Video generation (minimax, vertex/veo, mm/t2v, mm/i2v)
+  music        Music generation (replicate/elevenlabs/music, replicate/meta/musicgen)
   document     Document processing (reducto: parse, extract, split, edit)
   gamma        Presentations (gamma)
   sms-verify   Send OTP verification code (prelude)
@@ -160,6 +162,10 @@ Examples:
   node api-hub.js video --prompt "A cat walking" --duration 5 --output video.mp4
   node api-hub.js video --prompt "Animate this" --image "https://example.com/cat.jpg" --duration 5 --output video.mp4
   node api-hub.js video --model "vertex/veo-3.1-fast-generate-preview" --prompt "A sunset" --output video.mp4
+
+  # Music (default: replicate/elevenlabs/music)
+  node api-hub.js music --prompt "upbeat electronic dance track" --output music.mp3
+  node api-hub.js music --model "replicate/meta/musicgen" --prompt "calm acoustic guitar" --duration 30
 
   # Document Processing
   node api-hub.js document --model "reducto/parse" --url "https://example.com/doc.pdf"
@@ -491,6 +497,29 @@ Examples:
         break
       }
 
+      case 'music': {
+        if (!args.prompt) {
+          console.error('Error: --prompt is required')
+          process.exit(1)
+        }
+        const musicModel = args.model || 'replicate/elevenlabs/music'
+        result = await music({
+          model: musicModel,
+          prompt: args.prompt,
+          duration: args.duration,
+          output: args.output,
+        })
+        if (args.output) {
+          console.log(`Music saved to: ${args.output}`)
+          if (result.url) {
+            console.log(`URL: ${result.url}`)
+          }
+        } else {
+          console.log(JSON.stringify(result, null, 2))
+        }
+        break
+      }
+
       case 'multimodal': {
         if (!args.model) {
           console.error('Error: --model is required')
@@ -723,6 +752,7 @@ module.exports = {
   search,
   scrape,
   video,
+  music,
   document,
   gamma,
   listModels,

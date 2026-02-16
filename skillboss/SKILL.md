@@ -45,7 +45,7 @@ node ./skillboss/scripts/api-hub.js chat --model "huggingface/zai-org/GLM-5" --p
 
 # Other tasks via /run with task parameter
 node ./skillboss/scripts/api-hub.js run --model "huggingface/BAAI/bge-small-en-v1.5" --inputs '{"task":"embedding","input":"hello world"}'
-node ./skillboss/scripts/api-hub.js run --model "huggingface/stabilityai/stable-diffusion-xl-base-1.0" --inputs '{"task":"image","prompt":"a sunset"}' --output /tmp/image.png
+node ./skillboss/scripts/api-hub.js run --model "huggingface/stabilityai/stable-diffusion-xl-base-1.0" --inputs '{"inputs":"a sunset"}' --output /tmp/image.png
 node ./skillboss/scripts/api-hub.js stt --file recording.mp3 --model "huggingface/openai/whisper-large-v3"
 ```
 
