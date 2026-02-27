@@ -147,6 +147,11 @@ Complete model list and detailed parameter documentation.
 - `scrapingdog/linkedin_company` - LinkedIn company
 - `scrapingdog/youtube_search` - YouTube search
 
+### CEO Interviews
+
+- `ceointerviews/get_feed` - Search verified CEO/executive conversation transcripts
+- `ceointerviews/get_quotes` - Get notable quotes from CEOs, executives, and politicians
+
 ### Presentations
 
 - `gamma/generation` - AI presentation generation
@@ -552,6 +557,51 @@ node ./skillboss/scripts/stripe-connect.js [options]
 3. Opens browser for Stripe's onboarding (KYC, bank verification)
 4. Polls until onboarding is complete
 5. Your `stripe_account_id` is stored for use with e-commerce Workers
+
+### ceointerviews/get_feed
+
+Search verified CEO/executive conversation transcripts. Access the world's largest database of executive interviews.
+
+```bash
+node ./skillboss/scripts/api-hub.js run --model "ceointerviews/get_feed" --inputs '{...}'
+```
+
+| Input               | Required | Description                                                          |
+| ------------------- | -------- | -------------------------------------------------------------------- |
+| `entity_name`       | No       | Person name (e.g. "Tim Cook", "jerome powell")                       |
+| `company_name`      | No       | Company name or ticker (e.g. "tesla", "TSLA")                        |
+| `keyword`           | No       | Keyword search within transcripts (combine with entity/company name) |
+| `entity_id`         | No       | Filter by entity ID                                                  |
+| `company_id`        | No       | Filter by company ID                                                 |
+| `filter_before_dt`  | No       | Only return conversations on or before this date (ISO 8601)          |
+| `page_size`         | No       | Number of results per page                                           |
+
+**Response:** `{ count, results: [{ item_title, publish_date, source_url, transcript, entity_name, entity_title, entity_id, institution, company_id, is_company_leader, entity_img }] }`
+
+### ceointerviews/get_quotes
+
+Get notable quotes from CEOs, executives, and politicians.
+
+```bash
+node ./skillboss/scripts/api-hub.js run --model "ceointerviews/get_quotes" --inputs '{...}'
+```
+
+| Input                 | Required | Description                                    |
+| --------------------- | -------- | ---------------------------------------------- |
+| `entity_name`         | No       | Person name                                    |
+| `company_name`        | No       | Company name or ticker                         |
+| `keyword`             | No       | Semantic search within quote text              |
+| `entity_id`           | No       | Filter by entity ID                            |
+| `company_id`          | No       | Filter by company ID                           |
+| `feed_item_id`        | No       | Filter by associated conversation              |
+| `filter_before_dt`    | No       | Date filter (ISO 8601)                         |
+| `is_notable`          | No       | Filter for notable quotes (boolean)            |
+| `is_controversial`    | No       | Filter for controversial quotes (boolean)      |
+| `is_financial_policy` | No       | Filter for financial policy quotes (boolean)   |
+| `before_quote_id`     | No       | Cursor pagination                              |
+| `page_size`           | No       | Number of results per page                     |
+
+**Response:** `{ count, results: [{ id, quote, source_url, is_notable, is_controversial, is_financial_policy, topics_mentioned, entities_mentioned, companies_mentioned, created_at, entity, feed_item }] }`
 
 ### run
 
