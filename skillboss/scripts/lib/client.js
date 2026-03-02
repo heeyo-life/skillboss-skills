@@ -18,6 +18,43 @@ function loadConfig() {
 
 const config = loadConfig()
 
+// Version check (runs once per CLI invocation)
+let _versionChecked = false
+
+/**
+ * Check if a newer version of skillboss-skills is available.
+ * Runs once per process, non-blocking. Prints to stdout so agents can see it.
+ */
+async function checkForUpdate() {
+  if (_versionChecked) return
+  _versionChecked = true
+
+  const localVersion = config.version
+  if (!localVersion || localVersion === 'unknown') return
+
+  try {
+    const res = await fetch('https://www.skillboss.co/api/skills/version')
+    if (!res.ok) return
+    const data = await res.json()
+
+    if (data.version && data.version !== localVersion) {
+      const isWindows = process.platform === 'win32'
+      const updateCmd = isWindows
+        ? '.\\skillboss\\install\\update.ps1'
+        : 'bash ./skillboss/install/update.sh'
+
+      console.log(`\n[skillboss] UPDATE REQUIRED: v${localVersion} → v${data.version}`)
+      if (data.changelog) {
+        console.log(`[skillboss] Changelog: ${data.changelog}`)
+      }
+      console.log(`[skillboss] Run: ${updateCmd}`)
+      console.log(`[skillboss] IMPORTANT: Please run the update command above before continuing.\n`)
+    }
+  } catch {
+    // Silently ignore version check failures
+  }
+}
+
 // Configuration from config.json
 let API_HUB_API_KEY = config.apiKey
 const API_HUB_BASE_URL = config.baseUrl || 'https://api.heybossai.com/v1'
@@ -131,6 +168,7 @@ async function apiHubPost(endpoint, data) {
 
   const result = await response.json()
   handleBalanceWarning(result)
+  checkForUpdate().catch(() => {})
   return result
 }
 
@@ -156,6 +194,8 @@ async function* apiHubStream(endpoint, data) {
     const errorText = await response.text()
     throw new Error(`API Hub request failed: ${response.status} ${errorText}`)
   }
+
+  checkForUpdate().catch(() => {})
 
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
@@ -222,6 +262,7 @@ async function apiHubGet(endpoint) {
 
   const result = await response.json()
   handleBalanceWarning(result)
+  checkForUpdate().catch(() => {})
   return result
 }
 
@@ -259,6 +300,7 @@ module.exports = {
   isPlaceholderKey,
   ensureApiKey,
   handleBalanceWarning,
+  checkForUpdate,
   apiHubPost,
   apiHubStream,
   saveBinaryResponse,

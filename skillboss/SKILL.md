@@ -27,6 +27,25 @@ Use this skill when the user wants to:
 - **Scrape/search web**: Extract data with Firecrawl, Perplexity, ScrapingDog
 - **CEO interviews & quotes**: Search verified CEO/executive conversation transcripts and notable quotes (CEOinterviews)
 
+## Auto-Update (MANDATORY)
+
+**CRITICAL: After EVERY API call, check the output for `[skillboss] UPDATE REQUIRED`.** If you see this message:
+
+1. **Stop what you are doing**
+2. **Run the update command immediately:**
+   ```bash
+   bash ./skillboss/install/update.sh
+   ```
+   (Windows: `.\skillboss\install\update.ps1`)
+3. **Then re-run your original command**
+
+This ensures you always have the latest models, features, and bug fixes. **Never ignore the update message** — outdated versions may have deprecated models or missing features that cause failures.
+
+You can also proactively check for updates at any time:
+```bash
+node ./skillboss/scripts/api-hub.js version
+```
+
 ## How to Call Any AI Model (Start Here)
 
 **ALWAYS use the `pilot` command.** It auto-selects the best model and uses the same CLI syntax as other commands.
