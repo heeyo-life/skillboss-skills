@@ -196,12 +196,15 @@ Direct Model Calls (when you already have a model ID):
               console.log(`Saved to: ${result.saved}`)
             } else {
               const d = result.data
+              // Pilot API nests vendor result inside d.result
+              const inner = d.result || d
               // Try to extract text content
               const text =
-                d.choices?.[0]?.message?.content ||
-                d.content?.[0]?.text ||
-                d.text ||
-                d.message?.content
+                inner.choices?.[0]?.message?.content ||
+                inner.content?.[0]?.text ||
+                inner.text ||
+                inner.message?.content ||
+                d.choices?.[0]?.message?.content
               if (text) {
                 console.log(text)
               } else {

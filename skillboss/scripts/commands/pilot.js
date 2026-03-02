@@ -29,8 +29,16 @@ function _buildInputs(type, flags) {
       break
 
     case 'tts':
-      if (flags.text) inputs.text = flags.text
-      if (flags['voice-id']) inputs.voice_id = flags['voice-id']
+      if (flags.text) {
+        inputs.text = flags.text
+        inputs.input = flags.text  // OpenAI TTS expects 'input', others expect 'text'
+      }
+      if (flags['voice-id']) {
+        inputs.voice_id = flags['voice-id']
+        inputs.voice = flags['voice-id']  // OpenAI TTS expects 'voice'
+      } else {
+        inputs.voice = 'alloy'  // OpenAI TTS requires voice, default to alloy
+      }
       break
 
     case 'stt': {
@@ -152,8 +160,10 @@ async function pilot(flags) {
     return { mode: 'chain', data: result }
   } else if (isExecute) {
     // Handle execute result — may need to download output
+    // Pilot API nests the actual vendor result inside result.result
+    const inner = result.result || result
     const output = flags.output
-    const mediaUrl = _extractMediaUrl(result)
+    const mediaUrl = _extractMediaUrl(inner)
 
     if (output && mediaUrl) {
       await _downloadToFile(mediaUrl, output)
@@ -161,8 +171,8 @@ async function pilot(flags) {
     }
 
     // TTS binary — check if response has binary indicator
-    if (output && result.audio_base64) {
-      const buffer = Buffer.from(result.audio_base64, 'base64')
+    if (output && (inner.audio_base64 || result.audio_base64)) {
+      const buffer = Buffer.from(inner.audio_base64 || result.audio_base64, 'base64')
       fs.writeFileSync(output, buffer)
       return { mode: 'execute', data: result, saved: output }
     }
