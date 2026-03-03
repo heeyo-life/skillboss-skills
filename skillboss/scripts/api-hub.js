@@ -760,9 +760,39 @@ Direct Model Calls (when you already have a model ID):
     if (process.env.DEBUG && result) {
       console.log('\nDebug Response:', JSON.stringify(result, null, 2))
     }
+
+    // Auto-update check after successful command execution (skip for version command itself)
+    if (command !== 'version') {
+      await checkForUpdates()
+    }
   } catch (error) {
     console.error('\nError:', error.message)
     process.exit(1)
+  }
+}
+
+/**
+ * Check for updates after each command execution
+ * Prints [skillboss] UPDATE REQUIRED if a new version is available
+ */
+async function checkForUpdates() {
+  try {
+    const localVersion = config.version
+    if (!localVersion || localVersion === 'unknown') return
+
+    const res = await fetchWithRetry('https://www.skillboss.co/api/skills/version', {
+      timeout: 3000, // Quick timeout to not slow down CLI
+    })
+    if (!res.ok) return
+
+    const data = await res.json()
+    if (data.version && data.version !== localVersion) {
+      console.log('\n[skillboss] UPDATE REQUIRED')
+      console.log(`Current: ${localVersion} → Latest: ${data.version}`)
+      console.log('Run: bash ./skillboss/install/update.sh')
+    }
+  } catch (e) {
+    // Silently ignore update check errors
   }
 }
 
