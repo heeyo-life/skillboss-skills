@@ -3,7 +3,7 @@
   "name": "io.github.heeyo-life/skillboss",
   "description": "One API key for 100+ AI services: Claude, GPT, Gemini, images, video, and more.",
   "repository": {
-    "url": "https://github.com/heeyo-life/skillboss-mcp",
+    "url": "https://github.com/heeyo-life/skillboss-skills",
     "source": "github"
   },
   "version": "1.0.1",
