@@ -1,0 +1,32 @@
+name: Publish to MCP Registry
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish-mcp:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for GitHub OIDC
+    defaults:
+      run:
+        working-directory: mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz
+          chmod +x mcp-publisher
+      
+      - name: Authenticate with GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+      
+      - name: Validate server.json
+        run: ./mcp-publisher validate
+      
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish
