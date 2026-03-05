@@ -1,0 +1,32 @@
+# Source files (we publish only built dist/)
+src/
+tsconfig.json
+
+# Development files
+*.log
+*.tmp
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+test/
+*.test.ts
+*.test.js
+
+# Build artifacts that shouldn't be published
+*.tsbuildinfo
+
+# Documentation that's already in package
+RELEASE.md
+
+# CI/CD
+.github/
