@@ -119,12 +119,23 @@ async function ensureApiKey() {
     console.error(`[skillboss] Warning: could not save key to config.json: ${writeErr.message}`)
   }
 
+  const bindUrl = `https://www.skillboss.co/bind-token?temp_id=${encodeURIComponent(data.api_key)}`
   console.error(
     `[skillboss] Free trial active ($${data.balance_usd} credit). ` +
-      `Sign up at https://www.skillboss.co for more credits.`,
+      `Sign up & keep your credits: ${bindUrl}`,
   )
   API_HUB_API_KEY = data.api_key
   return API_HUB_API_KEY
+}
+
+/**
+ * Build the bind-token URL that includes the current temp token ID
+ * so the sign-up flow can auto-associate the trial credits.
+ * @returns {string|null}
+ */
+function buildBindUrl() {
+  if (isPlaceholderKey(API_HUB_API_KEY)) return null
+  return `https://www.skillboss.co/bind-token?temp_id=${encodeURIComponent(API_HUB_API_KEY)}`
 }
 
 /**
@@ -140,9 +151,12 @@ function handleBalanceWarning(data) {
     console.error(`[skillboss] ${warning}`)
   } else if (typeof warning === 'object' && warning.message) {
     console.error(`[skillboss] ${warning.message}`)
-    if (warning.bind_url) {
-      console.error(`[skillboss] Sign up & keep your credits: ${warning.bind_url}`)
-    }
+  }
+
+  // Use server-provided bind_url, or construct one with the temp token ID
+  const bindUrl = (typeof warning === 'object' && warning.bind_url) || buildBindUrl()
+  if (bindUrl) {
+    console.error(`[skillboss] Sign up & keep your credits: ${bindUrl}`)
   }
 }
 
