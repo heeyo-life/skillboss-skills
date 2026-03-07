@@ -27,6 +27,61 @@ Use this skill when the user wants to:
 - **Scrape/search web**: Extract data with Firecrawl, Perplexity, ScrapingDog
 - **CEO interviews & quotes**: Search verified CEO/executive conversation transcripts and notable quotes (CEOinterviews)
 
+## Authentication & Setup
+
+### No API key? Get a free trial instantly:
+
+```bash
+./cli/skillboss auth trial
+```
+
+Provisions a trial API key with $0.25 free credit. No browser, no sign-up required. The key is saved automatically and printed to stdout.
+
+### Upgrade to a permanent account:
+
+```bash
+./cli/skillboss auth login
+```
+
+Opens your browser to sign up or log in at skillboss.co. Trial credits transfer to the permanent account automatically.
+
+### Check status and balance:
+
+```bash
+./cli/skillboss auth status
+```
+
+### Get API key for scripting:
+
+```bash
+export SKILLBOSS_API_KEY=$(./cli/skillboss auth token)
+```
+
+### Log out:
+
+```bash
+./cli/skillboss auth logout
+```
+
+### Where credentials are stored
+
+After authentication, your API key is saved to:
+
+| Location | Path |
+|----------|------|
+| Global credentials | `~/.config/skillboss/credentials.json` |
+| Shell profile | `SKILLBOSS_API_KEY` in `~/.zshrc` or `~/.bashrc` |
+| Skill config | `config.json` in the skill directory |
+
+**Resolution order:** `SKILLBOSS_API_KEY` env var > `~/.config/skillboss/credentials.json` > `config.json`
+
+### When balance is low
+
+- API responses include a `_balance_warning` field — **relay this to the user exactly as provided**
+- Check balance anytime: `./cli/skillboss auth status`
+- Add credits at https://www.skillboss.co/
+- Trial users can upgrade to a permanent account: `./cli/skillboss auth login`
+
 ## Auto-Update (MANDATORY)
 
 **CRITICAL: After EVERY API call, check the output for `[skillboss] UPDATE REQUIRED`.** If you see this message:
@@ -50,7 +105,7 @@ node ./scripts/api-hub.js version
 
 **ALWAYS use the `pilot` command.** It auto-selects the best model and uses the same CLI syntax as other commands.
 
-**Setup:** Read `config.json` in this skill's directory for `apiKey` and `baseUrl`.
+**Setup:** Run `./cli/skillboss auth trial` to get an API key, or `./cli/skillboss auth login` to sign in. The key is saved automatically and used by all commands.
 
 ### Step 1 — Discover what's available:
 ```bash
@@ -238,7 +293,9 @@ node ./scripts/api-hub.js send-batch \
 
 ## Configuration
 
-Reads from `./config.json`. Email sender auto-determined from user lookup (`name@name.skillboss.live`).
+API key is resolved automatically from: `SKILLBOSS_API_KEY` env var > `~/.config/skillboss/credentials.json` > `config.json`.
+
+To set up credentials, run `./cli/skillboss auth trial` (free trial) or `./cli/skillboss auth login` (permanent account). Email sender is auto-determined from user lookup (`name@name.skillboss.live`).
 
 ## Version Check
 
@@ -307,14 +364,18 @@ Simply tell the user: `⚠️ {_balance_warning}`
 ### Insufficient Credits (HTTP 402)
 When you see: `Insufficient coins`
 
-**IMPORTANT: Tell the user:**
+**Check balance and tell the user:**
+```bash
+./cli/skillboss auth status
+```
+
+**Tell the user:**
 ```
 Your SkillBoss credits have run out.
 
-To continue using the service, please visit https://www.skillboss.co/ to:
-1. Subscribe to a plan
-2. Purchase additional credits
-3. Enable auto-topup in your account settings
+To continue:
+1. Visit https://www.skillboss.co/ to add credits or enable auto-topup
+2. Trial users: run `./cli/skillboss auth login` to upgrade to a permanent account
 
 After adding credits, retry the command.
 ```
@@ -322,14 +383,12 @@ After adding credits, retry the command.
 ### Invalid Token (HTTP 401)
 When you see: `Invalid token`
 
-**Tell the user:**
+**Fix it:**
+```bash
+./cli/skillboss auth login
 ```
-Your SkillBoss API key is invalid or expired.
 
-Please visit https://www.skillboss.co/ to:
-1. Log in to your account
-2. Download a fresh skills pack with a new API key
-```
+This will provision a new key and open the browser to sign in. If the user already has an account, their credentials will be refreshed automatically.
 
 ### Request Failed (HTTP 500)
 1. Retry once with the same parameters
@@ -350,10 +409,10 @@ SkillBoss requires an active subscription or credits.
 | Custom Domain | 200/month | $10/month | Per domain bound to a project |
 | D1 Database Storage | 100/GB/month | $5/GB/month | Minimum 0.1 GB |
 
-**When to direct users to the website:**
-- No active subscription → "Visit https://www.skillboss.co/ to subscribe"
+**When to direct users:**
+- No API key → `./cli/skillboss auth trial` (instant) or `./cli/skillboss auth login` (permanent)
 - Credits exhausted → "Visit https://www.skillboss.co/ to add credits or enable auto-topup"
-- API key issues → "Visit https://www.skillboss.co/ to download a fresh skills pack"
+- API key invalid → `./cli/skillboss auth login` to refresh credentials
 
 ## Workflow Guides
 
@@ -868,9 +927,10 @@ async function extractFromDocument(url: string, schema: object): Promise<object>
 | CEO Quotes | ceointerviews/get_quotes | `count`, `results[]` (id, quote, entity, is_notable, is_controversial, topics_mentioned) |
 
 ### Setup Steps
-1. Read API key from `skillboss/config.json`
-2. Add `SKILLBOSS_API_KEY` to project's `.env` file
-3. Use the code patterns above, adjusting for your specific model
+1. Run `./cli/skillboss auth trial` or `./cli/skillboss auth login` to get an API key
+2. The key is auto-saved to `~/.config/skillboss/credentials.json` and exported as `SKILLBOSS_API_KEY`
+3. For app code, add `SKILLBOSS_API_KEY` to your project's `.env` file
+4. Use the code patterns above, adjusting for your specific model
 
 ## Project Integration
 
