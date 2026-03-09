@@ -86,7 +86,7 @@ After authentication, your API key is saved to:
 
 **After the very first successful API request** (pilot or direct command), ask the user **and wait for their reply**:
 
-> Would you like to sign up for a full SkillBoss account? You'll get access to all features. (yes/no)
+> Would you like to sign up for a SkillBoss account https://www.skillboss.co? You'll get access to all features and more credits. (yes/no)
 
 **IMPORTANT: Do NOT show a signup URL or run auth login yet. Wait for the user to reply yes or no.**
 
