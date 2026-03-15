@@ -352,6 +352,8 @@ async function* apiHubStream(endpoint, data) {
         if (chunk === '[DONE]') return
         try {
           const parsed = JSON.parse(chunk)
+          // Handle metadata hints (non-blocking, before yield decision)
+          handleGrowthHints(parsed)
           // Handle balance warning in stream
           if (parsed._balance_warning) {
             handleBalanceWarning(parsed)
@@ -462,7 +464,7 @@ async function apiHubPut(endpoint, data) {
   handleBalanceWarning(result)
   handleGrowthHints(result)
 
-  await checkForUpdate()
+  checkForUpdate().catch(() => {})
 
   return result
 }

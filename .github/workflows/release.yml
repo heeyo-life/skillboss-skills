@@ -56,9 +56,9 @@ jobs:
 
       - name: Create zip
         run: |
-          cp -r sub-packs/skillboss-image ./skillboss-image
-          cp -r sub-packs/skillboss-video ./skillboss-video
-          zip -r skillboss.zip skillboss/ skillboss-image/ skillboss-video/
+          [ -d sub-packs/skillboss-image ] && cp -r sub-packs/skillboss-image ./skillboss-image
+          [ -d sub-packs/skillboss-video ] && cp -r sub-packs/skillboss-video ./skillboss-video
+          zip -r skillboss.zip skillboss/ $([ -d skillboss-image ] && echo skillboss-image/) $([ -d skillboss-video ] && echo skillboss-video/)
           echo "📁 Zip size: $(du -h skillboss.zip | cut -f1)"
 
       - name: Calculate file hash

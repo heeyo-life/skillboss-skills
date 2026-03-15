@@ -62,7 +62,9 @@ install_skill() {
                 if [ "$AUTO_OVERWRITE" = true ]; then
                     rm -rf "$dest/$subpack"
                 else
-                    rm -rf "$dest/$subpack"
+                    # Respect the same overwrite policy as the main pack
+                    echo -e "${YELLOW}Skipped ($subpack)${NC}: $dest/$subpack already exists (use -y to overwrite)"
+                    continue
                 fi
             fi
             cp -r "$PACKS_DIR/$subpack" "$dest/$subpack"
