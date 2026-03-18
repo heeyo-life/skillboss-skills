@@ -72,6 +72,13 @@ fi
 echo -e "${CYAN}Backing up current installation to $BACKUP_DIR...${NC}"
 mv "$SKILLBOSS_DIR" "$BACKUP_DIR"
 
+# Also backup sub-packs so unzip can replace them with new versions
+for subpack in skillboss-image skillboss-video; do
+    if [ -d "$PARENT_DIR/$subpack" ]; then
+        mv "$PARENT_DIR/$subpack" "$BACKUP_DIR/$subpack"
+    fi
+done
+
 # 6. Extract new version
 echo -e "${CYAN}Extracting new version...${NC}"
 unzip -q "$TEMP_DIR/skillboss.zip" -d "$PARENT_DIR"
