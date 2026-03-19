@@ -42,7 +42,7 @@
  */
 
 const { fetchWithRetry } = require('./lib/fetch-retry')
-const { config } = require('./lib/client')
+const { config, apiHubGet, apiHubPost, ensureApiKey, detectAgentType } = require('./lib/client')
 
 // Commands
 const { run } = require('./commands/run')
@@ -113,6 +113,7 @@ Commands:
   sms-send     Send SMS notification
   send-email   Send a single email
   send-batch   Send batch emails with templates
+  skills       Discover & run community skills
   version      Check for updates
   list-models  List available models from API Hub
 
@@ -775,6 +776,32 @@ Direct Model Calls (when you already have a model ID):
         break
       }
 
+      case 'skills': {
+        if (args['search']) {
+          const q = encodeURIComponent(args['search'])
+          const searchResult = await apiHubGet(`/skills/search?q=${q}&format=markdown`)
+          console.log(typeof searchResult === 'string' ? searchResult : JSON.stringify(searchResult, null, 2))
+        } else if (args['category']) {
+          const searchResult = await apiHubGet(`/skills/search?category=${encodeURIComponent(args['category'])}&format=markdown`)
+          console.log(typeof searchResult === 'string' ? searchResult : JSON.stringify(searchResult, null, 2))
+        } else if (args['info']) {
+          const slug = encodeURIComponent(args['info'])
+          const searchResult = await apiHubGet(`/skills/${slug}?format=markdown`)
+          console.log(typeof searchResult === 'string' ? searchResult : JSON.stringify(searchResult, null, 2))
+        } else if (args['run']) {
+          const skillName = args['run']
+          const input = args['input'] || ''
+          const stream = args['stream'] !== undefined
+          await runSkill(skillName, input, stream)
+        } else {
+          console.error('Usage: node scripts/api-hub.js skills --search <query>')
+          console.error('       node scripts/api-hub.js skills --info @user/skill')
+          console.error('       node scripts/api-hub.js skills --run @user/skill --input <text>')
+          process.exit(1)
+        }
+        break
+      }
+
       default:
         console.error(`Unknown command: ${command}`)
         console.error('Run with --help to see available commands')
@@ -792,6 +819,56 @@ Direct Model Calls (when you already have a model ID):
   } catch (error) {
     console.error('\nError:', error.message)
     process.exit(1)
+  }
+}
+
+/**
+ * Run a community skill via /v1/run with model="skill"
+ * @param {string} skillName - Skill slug (e.g. @alice/url-summarizer)
+ * @param {string} input - Text input to the skill
+ * @param {boolean} stream - Whether to stream the response via SSE
+ */
+async function runSkill(skillName, input, stream) {
+  const body = {
+    model: 'skill',
+    inputs: {
+      name: skillName,
+      parts: [{ type: 'text', text: input }],
+      stream: stream,
+    },
+  }
+
+  if (stream) {
+    // SSE streaming
+    const apiKey = await ensureApiKey()
+    const baseUrl = config.baseUrl || 'https://api.heybossai.com/v1'
+    const res = await fetchWithRetry(`${baseUrl}/run`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'X-Agent-Type': detectAgentType(),
+        'X-Skill-Pack': config.leadSkill || 'skillboss',
+      },
+      body: JSON.stringify(body),
+    })
+    for await (const chunk of res.body) {
+      const text = new TextDecoder().decode(chunk)
+      for (const line of text.split('\n')) {
+        if (!line.startsWith('data:')) continue
+        const data = line.slice(5).trim()
+        if (data === '[DONE]') break
+        try {
+          const ev = JSON.parse(data)
+          if (ev.type === 'text-delta') process.stdout.write(ev.delta)
+          else if (ev.type === 'file') console.log(`\n[File] ${ev.url}`)
+          else if (ev.type === 'progress') process.stderr.write(`[${ev.status}] ${ev.message}\n`)
+        } catch {}
+      }
+    }
+  } else {
+    const result = await apiHubPost('/run', body)
+    console.log(JSON.stringify(result, null, 2))
   }
 }
 
@@ -880,4 +957,10 @@ module.exports = {
   // Email
   sendEmail,
   sendBatchEmails,
+
+  // Skills marketplace
+  runSkill,
+  skillsSearch,
+  skillsDetail,
+  skillsRun,
 }

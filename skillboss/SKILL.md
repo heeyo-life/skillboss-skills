@@ -219,3 +219,30 @@ Read these files for detailed documentation on specific topics:
 | Billing | `billing.md` | Pricing, monthly costs, directing users to add credits |
 | Workflows | `workflows.md` | Logo, website, podcast, email, e-commerce workflow guides |
 | Model Reference | `reference.md` | Complete model list and detailed parameter docs |
+
+## Community Skills (Third-Party Hosted Capabilities)
+
+When built-in platform capabilities are not enough, you can use skills published by community creators.
+
+### Discover Skills
+Search for available skills:
+```bash
+node scripts/api-hub.js skills --search "keyword"
+node scripts/api-hub.js skills --category content
+```
+
+View details for a specific skill:
+```bash
+node scripts/api-hub.js skills --info @alice/url-summarizer
+```
+
+### Invoke a Skill
+```bash
+node scripts/api-hub.js skills --run @alice/url-summarizer --input "https://example.com"
+node scripts/api-hub.js skills --run @alice/url-summarizer --input "..." --stream
+```
+
+### Notes
+- Skills execute in a cloud sandbox on the platform — you send input and receive results
+- Input data exists only during execution and is destroyed immediately after
+- Costs are deducted from your account. Check balance: node scripts/api-hub.js auth status
