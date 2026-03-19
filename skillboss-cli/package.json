@@ -1,0 +1,29 @@
+{
+  "name": "skillboss",
+  "version": "0.1.0",
+  "description": "CLI for creating, testing, and publishing SkillBoss skills",
+  "bin": {
+    "skillboss": "./bin/index.js"
+  },
+  "files": [
+    "bin/",
+    "commands/",
+    "lib/",
+    "templates/"
+  ],
+  "keywords": [
+    "skillboss",
+    "ai",
+    "skills",
+    "cli",
+    "claude"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/heeyo-life/skillboss-skills"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
