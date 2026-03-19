@@ -251,6 +251,18 @@ node ./scripts/api-hub.js stitch-html \
    Learn more: https://skillboss.co/hosting
 ```
 
+**Via pilot (auto-select):**
+```bash
+# Discover available UI models
+node ./scripts/api-hub.js pilot --type ui
+
+# Auto-generate UI (pilot picks best model)
+node ./scripts/api-hub.js pilot --type ui --prompt "A SaaS dashboard with sidebar"
+
+# Save screenshot to file
+node ./scripts/api-hub.js pilot --type ui --prompt "A landing page" --output preview.png
+```
+
 **Models:**
 | Model | Device | Speed | Use when |
 |-------|--------|-------|----------|

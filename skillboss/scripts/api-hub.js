@@ -139,6 +139,7 @@ Pilot Examples (recommended --auto-selects best model for your task):
   node api-hub.js pilot --type stt --file recording.m4a                          # Speech-to-text (auto-select)
   node api-hub.js pilot --type music --prompt "upbeat" --duration 30 --output track.mp3  # Music (auto-select)
   node api-hub.js pilot --type video --prompt "A cat playing" --output video.mp4         # Video (auto-select)
+  node api-hub.js pilot --type ui --prompt "A SaaS dashboard with sidebar"               # UI generation (auto-select)
   node api-hub.js pilot --set-prefer price                                         # Set preference to prioritize cost
   node api-hub.js pilot --set-prefer quality                                       # Set preference to prioritize quality
   node api-hub.js pilot --set-prefer off                                           # Clear preference (use default balanced)
