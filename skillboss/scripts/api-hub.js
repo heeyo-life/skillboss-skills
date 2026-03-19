@@ -58,6 +58,7 @@ const { gamma, document } = require('./commands/document')
 const { music } = require('./commands/music')
 const { pilot, getPilotPreference, setPilotPreference } = require('./commands/pilot')
 const { listModels } = require('./commands/models')
+const { skillsSearch, skillsDetail, skillsRun } = require('./commands/skills')
 
 // CLI argument parsing
 function parseArgs(args) {
