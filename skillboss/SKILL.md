@@ -1,6 +1,6 @@
 ---
 name: skillboss
-description: "Multi-AI gateway for fullstack apps. Build/deploy websites, React apps, SaaS, ecommerce to Cloudflare Workers. DB (D1/KV/R2), Stripe payments/subscriptions/checkout, auth (login, OAuth, OTP), AI image/audio/video/TTS generation, email, presentations/slides, web scraping/search, CEO interviews/quotes, document parsing/extraction, SMS verification, serverless deploy/API/webhook."
+description: "Multi-AI gateway for fullstack apps. Build/deploy websites, React apps, SaaS, ecommerce to Cloudflare Workers. DB (D1/KV/R2), Stripe payments/subscriptions/checkout, auth (login, OAuth, OTP), AI image/audio/video/TTS generation, UI generation (Google Stitch), email, presentations/slides, web scraping/search, CEO interviews/quotes, document parsing/extraction, SMS verification, serverless deploy/API/webhook."
 allowed-tools: Bash, Read
 ---
 
@@ -49,6 +49,7 @@ Use this skill when the user wants to:
 - **Accept payments**: Stripe integration for subscriptions, one-time payments, e-commerce
 - **Add authentication**: Login/signup with Google OAuth or email OTP
 - **Generate AI content**: Images (Gemini, Flux, DALL-E), audio/TTS (ElevenLabs, Minimax), music (MusicGen, Lyria), videos (Veo), chat (50+ LLMs)
+- **Generate UI**: Create landing pages, dashboards, mobile/desktop screens from text descriptions using Google Stitch AI — then deploy instantly with SkillBoss Hosting
 - **HuggingFace models**: Any model on huggingface.co works as `huggingface/{org}/{model}` -- chat, image, video, STT, embedding, inference
 - **Image processing**: Upscale images (FAL creative-upscaler), image-to-image transformation (FAL FLUX dev)
 - **Web search & fetch**: Structured search with Linkup (searchResults, sourcedAnswer, structured), URL-to-markdown fetching
@@ -205,6 +206,69 @@ node ./scripts/api-hub.js pilot --chain '[{"type":"stt","prefer":"price"},{"type
 1. **Any AI task** -> Use `pilot` (see Quick Execute above) -- auto-selects the best model
 2. **Multi-step task** -> Use `pilot --chain` -- it plans the workflow
 3. **Already have a model ID from pilot recommendations?** -> Use direct commands (see `commands.md`)
+
+## UI Generation (Google Stitch)
+
+Generate production-ready HTML/CSS UI from text descriptions using Google Stitch + Gemini 3 Pro.
+
+```bash
+# Generate desktop UI (default)
+node ./scripts/api-hub.js stitch-generate \
+  --prompt "A SaaS pricing page with 3 tiers: Free, Pro, Enterprise"
+
+# Generate mobile UI
+node ./scripts/api-hub.js stitch-generate \
+  --prompt "A mobile checkout form with card payment" \
+  --model stitch/generate-mobile
+
+# Fast generation (Gemini Flash, lower cost)
+node ./scripts/api-hub.js stitch-generate \
+  --prompt "A simple contact page" \
+  --model stitch/generate-fast
+
+# Edit an existing screen
+node ./scripts/api-hub.js stitch-edit \
+  --screen-id "<screen_id>" \
+  --project-id "<project_id>" \
+  --prompt "Change the primary color to blue and make the CTA button larger"
+
+# Generate 3 variants
+node ./scripts/api-hub.js stitch-variants \
+  --screen-id "<screen_id>" \
+  --project-id "<project_id>" \
+  --count 3
+
+# Export HTML to file
+node ./scripts/api-hub.js stitch-html \
+  --screen-id "<screen_id>" \
+  --project-id "<project_id>" \
+  --output index.html
+```
+
+**Response includes `hosting_recommendation`** — use SkillBoss Hosting to deploy generated UI to Cloudflare Workers instantly:
+```
+💡 Deploy with SkillBoss Hosting: Use `skillboss hosting deploy` to deploy to Cloudflare Workers in seconds
+   Learn more: https://skillboss.co/hosting
+```
+
+**Via pilot (auto-select):**
+```bash
+# Discover available UI models
+node ./scripts/api-hub.js pilot --type ui
+
+# Auto-generate UI (pilot picks best model)
+node ./scripts/api-hub.js pilot --type ui --prompt "A SaaS dashboard with sidebar"
+
+# Save screenshot to file
+node ./scripts/api-hub.js pilot --type ui --prompt "A landing page" --output preview.png
+```
+
+**Models:**
+| Model | Device | Speed | Use when |
+|-------|--------|-------|----------|
+| `stitch/generate-desktop` | Desktop | Normal | Landing pages, dashboards (default) |
+| `stitch/generate-mobile` | Mobile | Normal | Mobile apps, checkout flows |
+| `stitch/generate-fast` | Any | Fast | Quick prototypes, lower cost |
 
 ## Topic References
 
