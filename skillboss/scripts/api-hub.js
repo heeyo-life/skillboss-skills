@@ -59,6 +59,7 @@ const { music } = require('./commands/music')
 const { pilot, getPilotPreference, setPilotPreference } = require('./commands/pilot')
 const { listModels } = require('./commands/models')
 const { skillsSearch, skillsDetail, skillsRun } = require('./commands/skills')
+const { stitchGenerate, stitchEdit, stitchVariants, stitchGetHtml } = require('./commands/stitch')
 
 // CLI argument parsing
 function parseArgs(args) {
@@ -115,6 +116,11 @@ Commands:
   send-email   Send a single email
   send-batch   Send batch emails with templates
   skills       Discover & run community skills
+  stitch-generate  Generate UI from text prompt (Google Stitch)
+  stitch-edit      Edit an existing Stitch screen
+  stitch-variants  Generate multiple UI variants of a screen
+  stitch-html      Get full HTML source of a Stitch screen
+
   version      Check for updates
   list-models  List available models from API Hub
 
@@ -135,6 +141,7 @@ Pilot Examples (recommended --auto-selects best model for your task):
   node api-hub.js pilot --type stt --file recording.m4a                          # Speech-to-text (auto-select)
   node api-hub.js pilot --type music --prompt "upbeat" --duration 30 --output track.mp3  # Music (auto-select)
   node api-hub.js pilot --type video --prompt "A cat playing" --output video.mp4         # Video (auto-select)
+  node api-hub.js pilot --type ui --prompt "A SaaS dashboard with sidebar"               # UI generation (auto-select)
   node api-hub.js pilot --set-prefer price                                         # Set preference to prioritize cost
   node api-hub.js pilot --set-prefer quality                                       # Set preference to prioritize quality
   node api-hub.js pilot --set-prefer off                                           # Clear preference (use default balanced)
@@ -743,6 +750,67 @@ Direct Model Calls (when you already have a model ID):
 
         console.log('\nBatch emails sent!')
         console.log(`Recipients: ${receivers.length}`)
+        break
+      }
+
+      case 'stitch-generate': {
+        if (!args.prompt) {
+          console.error('Error: --prompt is required')
+          process.exit(1)
+        }
+        result = await stitchGenerate({
+          prompt: args.prompt,
+          model: args.model,
+          deviceType: args['device-type'],
+          output: args.output,
+        })
+        if (!args.output) {
+          console.log(JSON.stringify(result, null, 2))
+        }
+        break
+      }
+
+      case 'stitch-edit': {
+        if (!args['screen-id'] || !args['project-id'] || !args.prompt) {
+          console.error('Error: --screen-id, --project-id, and --prompt are required')
+          process.exit(1)
+        }
+        result = await stitchEdit({
+          screenId: args['screen-id'],
+          projectId: args['project-id'],
+          prompt: args.prompt,
+        })
+        console.log(JSON.stringify(result, null, 2))
+        break
+      }
+
+      case 'stitch-variants': {
+        if (!args['screen-id'] || !args['project-id']) {
+          console.error('Error: --screen-id and --project-id are required')
+          process.exit(1)
+        }
+        result = await stitchVariants({
+          screenId: args['screen-id'],
+          projectId: args['project-id'],
+          count: args.count,
+        })
+        console.log(JSON.stringify(result, null, 2))
+        break
+      }
+
+      case 'stitch-html': {
+        if (!args['screen-id'] || !args['project-id']) {
+          console.error('Error: --screen-id and --project-id are required')
+          process.exit(1)
+        }
+        result = await stitchGetHtml({
+          screenId: args['screen-id'],
+          projectId: args['project-id'],
+          output: args.output,
+        })
+        if (!args.output) {
+          console.log(JSON.stringify(result, null, 2))
+        }
         break
       }
 
