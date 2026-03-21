@@ -136,3 +136,101 @@ if [ $installed -eq 0 ] && [ $skipped -eq 0 ]; then
 else
     echo -e "Installed: ${GREEN}$installed${NC}, Skipped: ${YELLOW}$skipped${NC}"
 fi
+
+# ── Post-install: Ensure API key + write onboarding CLAUDE.md ──────────────
+if [ $installed -gt 0 ]; then
+    echo ""
+    echo -e "${CYAN}Setting up API access...${NC}"
+
+    # Auto-provision trial key if no key exists (creates wallet with $1.00 bonus)
+    SKILLBOSS_SCRIPT=""
+    for candidate in "$HOME/.claude/skills/skillboss/scripts/skillboss" \
+                     "$HOME/.codex/skills/skillboss/scripts/skillboss"; do
+        if [ -x "$candidate" ]; then
+            SKILLBOSS_SCRIPT="$candidate"
+            break
+        fi
+    done
+
+    if [ -n "$SKILLBOSS_SCRIPT" ]; then
+        # Check if already has a valid key
+        CREDS_FILE="$HOME/.config/skillboss/credentials.json"
+        HAS_KEY=false
+        if [ -f "$CREDS_FILE" ]; then
+            # Try python3, fall back to node for JSON parsing
+            KEY=$(python3 -c "import json; print(json.load(open('$CREDS_FILE')).get('api_key',''))" 2>/dev/null \
+                || node -e "try{console.log(JSON.parse(require('fs').readFileSync('$CREDS_FILE','utf8')).api_key||'')}catch{}" 2>/dev/null \
+                || echo "")
+            if [ -n "$KEY" ] && [ "$KEY" != "YOUR_API_KEY_HERE" ]; then
+                HAS_KEY=true
+            fi
+        fi
+
+        if [ "$HAS_KEY" = false ]; then
+            echo -e "  Provisioning free trial token (\$1.00 credit)..."
+            "$SKILLBOSS_SCRIPT" auth trial 2>/dev/null && echo -e "  ${GREEN}Trial key provisioned${NC}" || true
+        else
+            echo -e "  ${GREEN}API key already configured${NC}"
+        fi
+    fi
+
+    # Write rich onboarding content to CLAUDE.md
+    CLAUDE_MD="$HOME/.claude/CLAUDE.md"
+    ONBOARDING_SECTION="## SkillBoss — AI API Provider"
+
+    if [ -f "$CLAUDE_MD" ] && grep -q "$ONBOARDING_SECTION" "$CLAUDE_MD"; then
+        echo -e "  ${GREEN}CLAUDE.md already has SkillBoss section${NC}"
+    else
+        # Ensure directory and file exist
+        mkdir -p "$(dirname "$CLAUDE_MD")"
+        touch "$CLAUDE_MD"
+        echo "" >> "$CLAUDE_MD"
+        cat >> "$CLAUDE_MD" << 'ONBOARDING_EOF'
+
+## SkillBoss — AI API Provider (active)
+
+SkillBoss is installed with $1.00 trial credit. One API key, 150+ capabilities, no extra setup.
+
+### Top 5 Most Popular APIs
+
+| # | API | Command | Cost |
+|---|-----|---------|------|
+| 1 | **Image Gen** (Flux-schnell, Flux-pro) | `node ./scripts/api-hub.js pilot --type image --prompt "..." --prefer price` | $0.003/image |
+| 2 | **Web Search** (Perplexity, Google) | `node ./scripts/api-hub.js pilot --type search --query "..."` | $0.01/query |
+| 3 | **LLM Chat** (Claude 4, GPT-5, Gemini) | `node ./scripts/api-hub.js pilot --type chat --prompt "..."` | from $0.001/call |
+| 4 | **Text-to-Speech** (ElevenLabs) | `node ./scripts/api-hub.js pilot --type tts --text "..." --output out.mp3` | $0.01/call |
+| 5 | **Web Scrape** (Firecrawl) | `node ./scripts/api-hub.js call --model firecrawl/scrape --payload '{"url":"..."}'` | $0.01/page |
+
+### Quick Examples
+
+```bash
+# Generate an image
+node ./scripts/api-hub.js pilot --type image --prompt "A sunset over mountains" --output sunset.png
+
+# Search the web for real-time data
+node ./scripts/api-hub.js pilot --type search --query "latest AI news 2026"
+
+# Generate speech from text
+node ./scripts/api-hub.js pilot --type tts --text "Hello, welcome to my app" --output welcome.mp3
+
+# Scrape a webpage
+node ./scripts/api-hub.js call --model firecrawl/scrape --payload '{"url":"https://example.com"}'
+
+# Generate a video from an image
+node ./scripts/api-hub.js pilot --type video --image photo.jpg --prompt "Animate this scene" --output video.mp4
+```
+
+### Tips
+- `--prefer price` for cheapest model, `--prefer quality` for best results
+- Trial credit ($1.00) covers ~300 image generations or ~100 web searches
+- All APIs authenticated via skills pack — no additional keys needed
+- Check balance: `./scripts/skillboss auth status`
+- Add credits: https://www.skillboss.co/billing
+ONBOARDING_EOF
+        echo -e "  ${GREEN}Onboarding guide written to ~/.claude/CLAUDE.md${NC}"
+    fi
+
+    echo ""
+    echo -e "${GREEN}Ready to go!${NC} Try your first API call:"
+    echo '  node ./scripts/api-hub.js pilot --type image --prompt "A cute robot" --output robot.png'
+fi

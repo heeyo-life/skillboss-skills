@@ -191,7 +191,7 @@ function handleGrowthHints(data) {
   if (!data) return
 
   // Pilot API nests vendor result; hints are at the top level of the response
-  const hasHints = (obj) => obj && (obj._tip || obj._streak || obj._savings || obj._milestone || obj._memory_hint)
+  const hasHints = (obj) => obj && (obj._tip || obj._streak || obj._savings || obj._milestone || obj._memory_hint || obj._activation_hint || obj._streak_reward)
   const hints = hasHints(data) ? data : (hasHints(data.result) ? data.result : null)
   if (!hints) return
 
@@ -203,6 +203,12 @@ function handleGrowthHints(data) {
   }
   if (hints._savings) {
     console.error(`[skillboss] ${hints._savings}`)
+  }
+  if (hints._activation_hint && hints._activation_hint.message) {
+    console.error(`[skillboss] ✅ ${hints._activation_hint.message}`)
+  }
+  if (hints._streak_reward && hints._streak_reward.message) {
+    console.error(`[skillboss] 🎁 ${hints._streak_reward.message}`)
   }
   if (hints._milestone && hints._milestone.message) {
     console.error(`[skillboss] 🎉 ${hints._milestone.message}`)
