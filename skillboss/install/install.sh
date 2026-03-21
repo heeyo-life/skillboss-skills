@@ -3,6 +3,10 @@
 # Skillboss Auto-Installer for macOS/Linux
 # Run: bash install.sh [-y]
 # -y: auto-overwrite existing installations
+#
+# For AI-first installation with auto-configuration:
+#   curl -fsSL https://skillboss.co/install.sh | bash
+#   or with API key: SKILLBOSS_API_KEY=sk-xxx bash install.sh
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -16,6 +20,12 @@ PACKS_DIR="$(dirname "$SKILL_DIR")"
 AUTO_OVERWRITE=false
 if [[ "$1" == "-y" ]]; then
     AUTO_OVERWRITE=true
+fi
+
+# Check if API key is provided via env var
+API_KEY_PROVIDED=""
+if [ -n "$SKILLBOSS_API_KEY" ]; then
+    API_KEY_PROVIDED="$SKILLBOSS_API_KEY"
 fi
 
 echo -e "${CYAN}Skillboss Auto-Installer${NC}"
@@ -135,4 +145,73 @@ if [ $installed -eq 0 ] && [ $skipped -eq 0 ]; then
     echo "  cp -r $SKILL_DIR <path-to>/openclaw/skills/skillboss"
 else
     echo -e "Installed: ${GREEN}$installed${NC}, Skipped: ${YELLOW}$skipped${NC}"
+fi
+
+# Configure API key if installation was successful
+if [ $installed -gt 0 ]; then
+    echo ""
+    echo -e "${CYAN}Configuration${NC}"
+    echo "=============================="
+
+    # Check if skillboss CLI is available
+    SKILLBOSS_CLI=""
+    if [ -x "$SKILL_DIR/scripts/skillboss" ]; then
+        SKILLBOSS_CLI="$SKILL_DIR/scripts/skillboss"
+    elif command -v skillboss &> /dev/null; then
+        SKILLBOSS_CLI="skillboss"
+    fi
+
+    # If API key was provided via env, configure it
+    if [ -n "$API_KEY_PROVIDED" ]; then
+        echo -e "${GREEN}API key detected${NC} - configuring..."
+
+        # Save to global config
+        CONFIG_DIR="$HOME/.config/skillboss"
+        CREDS_FILE="$CONFIG_DIR/credentials.json"
+        mkdir -p "$CONFIG_DIR"
+
+        cat > "$CREDS_FILE" <<EOF
+{
+  "api_key": "$API_KEY_PROVIDED",
+  "type": "permanent",
+  "updated_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+}
+EOF
+        chmod 600 "$CREDS_FILE"
+
+        # Update config.json if it exists
+        if [ -f "$SKILL_DIR/config.json" ]; then
+            # Simple JSON update using sed (works without jq)
+            sed -i.bak "s|\"apiKey\": \"[^\"]*\"|\"apiKey\": \"$API_KEY_PROVIDED\"|" "$SKILL_DIR/config.json"
+            rm -f "$SKILL_DIR/config.json.bak"
+        fi
+
+        echo -e "${GREEN}✓ API key configured${NC}"
+        echo ""
+        echo -e "${GREEN}Installation complete!${NC} Run your AI assistant to start using SkillBoss."
+    else
+        # No API key provided - guide user to authenticate
+        echo ""
+        echo -e "${YELLOW}API key not configured yet.${NC}"
+        echo ""
+        echo "To complete setup, choose one of these options:"
+        echo ""
+
+        if [ -n "$SKILLBOSS_CLI" ]; then
+            echo -e "  ${CYAN}Option 1 (Recommended):${NC} Authenticate with your SkillBoss account"
+            echo "    $SKILLBOSS_CLI auth login"
+            echo ""
+            echo -e "  ${CYAN}Option 2:${NC} Get a free trial key (no sign-up)"
+            echo "    $SKILLBOSS_CLI auth trial"
+            echo ""
+        else
+            echo -e "  ${CYAN}Option 1:${NC} Sign in at ${CYAN}https://www.skillboss.co${NC}"
+            echo "    Copy your API key from the dashboard"
+            echo ""
+        fi
+
+        echo -e "  ${CYAN}Option 3:${NC} Re-run installer with API key:"
+        echo "    SKILLBOSS_API_KEY=sk-xxx bash install.sh -y"
+        echo ""
+    fi
 fi
