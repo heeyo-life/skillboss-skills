@@ -198,6 +198,9 @@ function helpMain() {
   log('')
   log('  COMMANDS')
   log(`    auth          Manage authentication with SkillBoss`)
+  log(`    config        Manage configuration`)
+  log(`    test          Test connection to SkillBoss API`)
+  log(`    status        Show wallet balance and usage`)
   log('')
   log(`  Run ${c.cyan('skillboss <command> --help')} for more information about a command.`)
   log('')
@@ -299,6 +302,66 @@ function helpAuthToken() {
   log('  EXAMPLES')
   log(`    ${c.dim('$')} skillboss auth token`)
   log(`    ${c.dim('$')} curl -H "Authorization: Bearer $(skillboss auth token)" ...`)
+  log('')
+}
+
+function helpConfig() {
+  log('')
+  log(`  ${c.bold('skillboss config')} - Manage configuration`)
+  log('')
+  log('  COMMANDS')
+  log(`    set-key       Set your API key`)
+  log(`    show          Show current configuration`)
+  log('')
+  log(`  Run ${c.cyan('skillboss config <command> --help')} for details.`)
+  log('')
+}
+
+function helpConfigSetKey() {
+  log('')
+  log(`  ${c.bold('skillboss config set-key')} - Set your API key`)
+  log('')
+  log('  Saves your API key to ~/.config/skillboss/credentials.json')
+  log('  The key is validated before saving.')
+  log('')
+  log('  USAGE')
+  log(`    skillboss config set-key ${c.dim('<API_KEY>')}`)
+  log('')
+  log('  EXAMPLES')
+  log(`    ${c.dim('$')} skillboss config set-key sk-abc123...`)
+  log('')
+}
+
+function helpConfigShow() {
+  log('')
+  log(`  ${c.bold('skillboss config show')} - Show current configuration`)
+  log('')
+  log('  Displays the current API key (masked) and configuration file location.')
+  log('')
+  log('  EXAMPLES')
+  log(`    ${c.dim('$')} skillboss config show`)
+  log('')
+}
+
+function helpTest() {
+  log('')
+  log(`  ${c.bold('skillboss test')} - Test connection to SkillBoss API`)
+  log('')
+  log('  Validates your API key and tests connectivity.')
+  log('')
+  log('  EXAMPLES')
+  log(`    ${c.dim('$')} skillboss test`)
+  log('')
+}
+
+function helpStatusCmd() {
+  log('')
+  log(`  ${c.bold('skillboss status')} - Show wallet balance and usage`)
+  log('')
+  log('  Displays your wallet balance, recent usage, and auto top-up status.')
+  log('')
+  log('  EXAMPLES')
+  log(`    ${c.dim('$')} skillboss status`)
   log('')
 }
 
@@ -542,6 +605,207 @@ async function cmdToken(flags) {
   }
 }
 
+// ── Config commands ───────────────────────────────────────────────────
+
+async function cmdConfigSetKey(args) {
+  const flags = args.filter(a => a.startsWith('-'))
+  const apiKey = args.find(a => !a.startsWith('-'))
+
+  if (flags.includes('--help') || flags.includes('-h') || !apiKey) {
+    helpConfigSetKey()
+    if (!apiKey) process.exit(1)
+    return
+  }
+
+  log('')
+
+  // Validate key format
+  if (!apiKey.startsWith('sk-') || apiKey.length < 32) {
+    log(`  ${fail()} Invalid API key format`)
+    log(`    Keys must start with 'sk-' and be at least 32 characters`)
+    log('')
+    process.exit(1)
+  }
+
+  // Test the key by calling the API
+  const s = spinner('Validating API key...')
+  try {
+    const resp = await fetch(`${API_BASE}/temp-token/poll-bind`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ temp_api_key: apiKey }),
+    })
+
+    if (!resp.ok && resp.status !== 404) {
+      s.fail('API key validation failed')
+      log(`    Status: ${resp.status}`)
+      log('')
+      process.exit(1)
+    }
+
+    s.stop('API key validated')
+  } catch (err) {
+    s.fail(`Network error: ${err.message}`)
+    log('')
+    process.exit(1)
+  }
+
+  // Save to credentials
+  saveGlobalCreds({
+    api_key: apiKey,
+    type: 'permanent',
+    updated_at: new Date().toISOString(),
+  })
+  log(`  ${ok()} Saved to ${c.dim(GLOBAL_CREDS_PATH)}`)
+
+  // Update local config if it exists
+  const config = loadLocalConfig()
+  if (config) {
+    config.apiKey = apiKey
+    saveLocalConfig(config)
+    log(`  ${ok()} Updated ${c.dim('config.json')}`)
+  }
+
+  log('')
+  log(`  ${c.bold(c.green("API key configured successfully!"))}`)
+  log(`  Run ${c.cyan('skillboss test')} to test your connection.`)
+  log('')
+}
+
+async function cmdConfigShow(flags) {
+  if (flags.includes('--help') || flags.includes('-h')) {
+    helpConfigShow()
+    return
+  }
+
+  const current = resolveKey()
+
+  log('')
+
+  if (!current) {
+    log(`  ${warn()} No API key configured`)
+    log(`  Run ${c.cyan('skillboss config set-key <KEY>')} to set your API key.`)
+    log('')
+    return
+  }
+
+  log(`  ${ok()} Configuration`)
+  log(`    API Key: ${maskKey(current.key)}`)
+  log(`    Source:  ${current.source}`)
+  log(`    Type:    ${current.type || 'unknown'}`)
+  log('')
+}
+
+// ── Test command ──────────────────────────────────────────────────────
+
+async function cmdTest(flags) {
+  if (flags.includes('--help') || flags.includes('-h')) {
+    helpTest()
+    return
+  }
+
+  const current = resolveKey()
+
+  log('')
+
+  if (!current) {
+    log(`  ${fail()} No API key configured`)
+    log(`  Run ${c.cyan('skillboss config set-key <KEY>')} to set your API key.`)
+    log('')
+    process.exit(1)
+  }
+
+  const s = spinner('Testing connection...')
+
+  try {
+    const resp = await fetch(`${API_BASE}/temp-token/poll-bind`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ temp_api_key: current.key }),
+    })
+
+    if (resp.ok || resp.status === 404) {
+      s.stop('Connection successful')
+      log(`  ${ok()} API key is valid`)
+      log(`    Endpoint: ${API_BASE}`)
+      log('')
+    } else {
+      s.fail('Connection failed')
+      log(`  ${fail()} API returned status ${resp.status}`)
+      log('')
+      process.exit(1)
+    }
+  } catch (err) {
+    s.fail('Connection failed')
+    log(`  ${fail()} ${err.message}`)
+    log('')
+    process.exit(1)
+  }
+}
+
+// ── Status command ────────────────────────────────────────────────────
+
+async function cmdStatusCmd(flags) {
+  if (flags.includes('--help') || flags.includes('-h')) {
+    helpStatusCmd()
+    return
+  }
+
+  const current = resolveKey()
+
+  log('')
+
+  if (!current) {
+    log(`  ${fail()} No API key configured`)
+    log(`  Run ${c.cyan('skillboss config set-key <KEY>')} to set your API key.`)
+    log('')
+    process.exit(1)
+  }
+
+  const s = spinner('Fetching account status...')
+
+  try {
+    // Try to get billing info from web API
+    const resp = await fetch(`${WEB_BASE}/api/billing`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${current.key}`,
+      },
+    })
+
+    if (resp.ok) {
+      const data = await resp.json()
+      s.stop('Account status')
+
+      log(`  ${ok()} Wallet Balance: ${c.bold(c.green(`$${(data.wallet_balance_usd || 0).toFixed(2)}`)}`)
+
+      if (data.auto_topup?.enabled) {
+        log(`  ${ok()} Auto Top-Up: ${c.green('ON')} (${c.dim(`$${data.auto_topup.amount || 10} when < $${data.auto_topup.threshold || 3}`)}`)
+      } else {
+        log(`  ${warn()} Auto Top-Up: ${c.yellow('OFF')}`)
+      }
+
+      log('')
+      log(`  Manage billing at: ${c.cyan(`${WEB_BASE}/console`)}`)
+      log('')
+    } else {
+      s.fail('Failed to fetch status')
+      log(`  ${warn()} Could not retrieve billing information`)
+      log(`    Status: ${resp.status}`)
+      log('')
+      log(`  Your API key is valid, but billing data is unavailable.`)
+      log(`  Visit ${c.cyan(`${WEB_BASE}/console`)} to view your account.`)
+      log('')
+    }
+  } catch (err) {
+    s.fail('Failed to fetch status')
+    log(`  ${warn()} ${err.message}`)
+    log('')
+    log(`  Visit ${c.cyan(`${WEB_BASE}/console`)} to view your account.`)
+    log('')
+  }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2)
@@ -577,6 +841,33 @@ async function main() {
         log('')
         process.exit(1)
     }
+  }
+
+  if (command === 'config') {
+    // skillboss config --help
+    if (!subcommand || subcommand === '--help' || subcommand === '-h') {
+      helpConfig()
+      process.exit(subcommand ? 0 : 1)
+    }
+
+    switch (subcommand) {
+      case 'set-key': return cmdConfigSetKey(flags)
+      case 'show':    return cmdConfigShow(flags)
+      default:
+        log('')
+        log(`  ${c.red('Unknown command:')} config ${subcommand}`)
+        log(`  Run ${c.cyan('skillboss config --help')} to see available commands.`)
+        log('')
+        process.exit(1)
+    }
+  }
+
+  if (command === 'test') {
+    return cmdTest(args.slice(1))
+  }
+
+  if (command === 'status') {
+    return cmdStatusCmd(args.slice(1))
   }
 
   log('')

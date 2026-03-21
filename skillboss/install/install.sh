@@ -136,3 +136,18 @@ if [ $installed -eq 0 ] && [ $skipped -eq 0 ]; then
 else
     echo -e "Installed: ${GREEN}$installed${NC}, Skipped: ${YELLOW}$skipped${NC}"
 fi
+
+# Print next steps
+echo ""
+echo -e "${GREEN}✅ SkillBoss installed successfully!${NC}"
+echo ""
+echo -e "${CYAN}Next steps:${NC}"
+echo ""
+echo -e "  ${CYAN}1.${NC} Configure your API key:"
+echo -e "     ${GREEN}skillboss config set-key YOUR_API_KEY${NC}"
+echo ""
+echo -e "  ${CYAN}2.${NC} Test your setup:"
+echo -e "     ${GREEN}skillboss test${NC}"
+echo ""
+echo -e "  Get your API key at: ${CYAN}https://www.skillboss.co/console${NC}"
+echo ""
