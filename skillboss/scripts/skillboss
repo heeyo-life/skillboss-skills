@@ -198,6 +198,10 @@ function helpMain() {
   log('')
   log('  COMMANDS')
   log(`    auth          Manage authentication with SkillBoss`)
+  log(`    config        View or manage configuration`)
+  log(`    balance       Check your account balance`)
+  log(`    usage         View API usage statistics`)
+  log(`    test          Test connection to SkillBoss API`)
   log('')
   log(`  Run ${c.cyan('skillboss <command> --help')} for more information about a command.`)
   log('')
@@ -299,6 +303,53 @@ function helpAuthToken() {
   log('  EXAMPLES')
   log(`    ${c.dim('$')} skillboss auth token`)
   log(`    ${c.dim('$')} curl -H "Authorization: Bearer $(skillboss auth token)" ...`)
+  log('')
+}
+
+function helpConfig() {
+  log('')
+  log(`  ${c.bold('skillboss config')} - View or manage configuration`)
+  log('')
+  log('  COMMANDS')
+  log(`    show          Show current configuration`)
+  log(`    set-key       Set API key manually`)
+  log('')
+  log('  EXAMPLES')
+  log(`    ${c.dim('$')} skillboss config show`)
+  log(`    ${c.dim('$')} skillboss config set-key sk-xxx`)
+  log('')
+}
+
+function helpBalance() {
+  log('')
+  log(`  ${c.bold('skillboss balance')} - Check your account balance`)
+  log('')
+  log('  Displays your current SkillBoss account balance and credit status.')
+  log('')
+  log('  EXAMPLES')
+  log(`    ${c.dim('$')} skillboss balance`)
+  log('')
+}
+
+function helpUsage() {
+  log('')
+  log(`  ${c.bold('skillboss usage')} - View API usage statistics`)
+  log('')
+  log('  Shows your recent API usage statistics including call counts and spending.')
+  log('')
+  log('  EXAMPLES')
+  log(`    ${c.dim('$')} skillboss usage`)
+  log('')
+}
+
+function helpTest() {
+  log('')
+  log(`  ${c.bold('skillboss test')} - Test connection to SkillBoss API`)
+  log('')
+  log('  Tests your API key and connection to SkillBoss services.')
+  log('')
+  log('  EXAMPLES')
+  log(`    ${c.dim('$')} skillboss test`)
   log('')
 }
 
@@ -542,6 +593,161 @@ async function cmdToken(flags) {
   }
 }
 
+// ── Config commands ───────────────────────────────────────────────────
+
+async function cmdConfigShow(flags) {
+  const current = resolveKey()
+
+  log('')
+
+  if (!current) {
+    log(`  ${warn()} No API key configured`)
+    log(`  Run ${c.cyan('skillboss auth login')} to sign in.`)
+    log('')
+    return
+  }
+
+  log(`  ${ok()} Configuration`)
+  log(`    API Key:  ${maskKey(current.key)}`)
+  log(`    Source:   ${current.source}`)
+  log(`    Type:     ${current.type || 'permanent'}`)
+  log('')
+}
+
+async function cmdConfigSetKey(flags, key) {
+  if (!key) {
+    log('')
+    log(`  ${fail()} No API key provided`)
+    log(`  Usage: ${c.cyan('skillboss config set-key sk-xxx')}`)
+    log('')
+    process.exit(1)
+  }
+
+  log('')
+  persistKey(key, 'permanent')
+  log(`  ${ok()} API key configured: ${maskKey(key)}`)
+  log('')
+}
+
+async function cmdConfig(subcommand, flags) {
+  if (!subcommand || subcommand === '--help' || subcommand === '-h') {
+    helpConfig()
+    return
+  }
+
+  switch (subcommand) {
+    case 'show':
+      return cmdConfigShow(flags)
+    case 'set-key':
+      return cmdConfigSetKey(flags, flags[0])
+    default:
+      log('')
+      log(`  ${c.red('Unknown command:')} config ${subcommand}`)
+      log(`  Run ${c.cyan('skillboss config --help')} to see available commands.`)
+      log('')
+      process.exit(1)
+  }
+}
+
+// ── Balance command ───────────────────────────────────────────────────
+
+async function cmdBalance(flags) {
+  if (flags.includes('--help') || flags.includes('-h')) {
+    helpBalance()
+    return
+  }
+
+  const current = resolveKey()
+
+  log('')
+
+  if (!current) {
+    log(`  ${warn()} Not logged in`)
+    log(`  Run ${c.cyan('skillboss auth login')} to sign in.`)
+    log('')
+    return
+  }
+
+  try {
+    const result = await pollBind(current.key)
+    log(`  ${ok()} Account Balance`)
+    log(`    Balance: ${c.green(`$${result.balance_usd.toFixed(2)}`)}`)
+    log(`    Status:  ${result.status === 'bound' ? 'permanent' : 'trial'}`)
+    log('')
+  } catch (err) {
+    log(`  ${fail()} Failed to fetch balance: ${err.message}`)
+    log('')
+    process.exit(1)
+  }
+}
+
+// ── Usage command ─────────────────────────────────────────────────────
+
+async function cmdUsage(flags) {
+  if (flags.includes('--help') || flags.includes('-h')) {
+    helpUsage()
+    return
+  }
+
+  const current = resolveKey()
+
+  log('')
+
+  if (!current) {
+    log(`  ${warn()} Not logged in`)
+    log(`  Run ${c.cyan('skillboss auth login')} to sign in.`)
+    log('')
+    return
+  }
+
+  log(`  ${c.bold('API Usage Statistics')}`)
+  log('')
+  log(`  ${c.dim('Note: Detailed usage stats require API endpoint implementation.')}`)
+  log(`  ${c.dim('Visit https://www.skillboss.co/console for full usage details.')}`)
+  log('')
+}
+
+// ── Test command ──────────────────────────────────────────────────────
+
+async function cmdTest(flags) {
+  if (flags.includes('--help') || flags.includes('-h')) {
+    helpTest()
+    return
+  }
+
+  const current = resolveKey()
+
+  log('')
+
+  if (!current) {
+    log(`  ${fail()} No API key configured`)
+    log(`  Run ${c.cyan('skillboss auth login')} to sign in.`)
+    log('')
+    process.exit(1)
+  }
+
+  log(`  ${c.bold('Testing SkillBoss connection...')}`)
+  log('')
+
+  const s = spinner('Verifying API key...')
+
+  try {
+    const result = await pollBind(current.key)
+    s.stop(`API key is valid (${result.status})`)
+    log(`  Balance: $${result.balance_usd.toFixed(2)}`)
+    log('')
+    log(`  ${c.green(c.bold('✓ Connection successful!'))}`)
+    log('')
+  } catch (err) {
+    s.fail(`Connection failed: ${err.message}`)
+    log('')
+    log(`  ${c.red('✗ Unable to connect to SkillBoss API')}`)
+    log(`  ${c.dim('Check your API key or network connection.')}`)
+    log('')
+    process.exit(1)
+  }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2)
@@ -577,6 +783,22 @@ async function main() {
         log('')
         process.exit(1)
     }
+  }
+
+  if (command === 'config') {
+    return cmdConfig(subcommand, flags)
+  }
+
+  if (command === 'balance') {
+    return cmdBalance(args.slice(1))
+  }
+
+  if (command === 'usage') {
+    return cmdUsage(args.slice(1))
+  }
+
+  if (command === 'test') {
+    return cmdTest(args.slice(1))
   }
 
   log('')
