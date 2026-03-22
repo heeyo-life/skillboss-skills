@@ -777,7 +777,7 @@ async function cmdStatusCmd(flags) {
       const data = await resp.json()
       s.stop('Account status')
 
-      log(`  ${ok()} Wallet Balance: ${c.bold(c.green(`$${(data.wallet_balance_usd || 0).toFixed(2)}`)}`)
+      log(`  ${ok()} Wallet Balance: ${c.bold(c.green(`$${(data.wallet_balance_usd || 0).toFixed(2)}`))}`)
 
       if (data.auto_topup?.enabled) {
         log(`  ${ok()} Auto Top-Up: ${c.green('ON')} (${c.dim(`$${data.auto_topup.amount || 10} when < $${data.auto_topup.threshold || 3}`)}`)
