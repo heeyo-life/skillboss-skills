@@ -53,7 +53,7 @@ Add credits at: https://www.skillboss.co/billing
 If you see `[skillboss] UPDATE REQUIRED` in any output:
 
 1. Stop immediately
-2. Run: `bash ../skillboss/install/update.sh`
+2. Update: `cd ../skillboss && git pull origin main`
 3. Re-run your original command
 
 ## More Capabilities

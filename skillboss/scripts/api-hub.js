@@ -882,7 +882,7 @@ async function checkForUpdates() {
     if (!res.ok) return
 
     const data = await res.json()
-    if (data.version && data.version !== localVersion) {
+    if (data.version && data.version > localVersion) {
       console.log(`\n[skillboss] Auto-updating: ${localVersion} ->${data.version}`)
 
       // Find the skillboss directory (parent of scripts/)

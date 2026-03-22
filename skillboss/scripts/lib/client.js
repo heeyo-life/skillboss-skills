@@ -47,7 +47,7 @@ async function checkForUpdate() {
     if (!res.ok) return
     const data = await res.json()
 
-    if (data.version && data.version !== localVersion) {
+    if (data.version && data.version > localVersion) {
       const isWindows = process.platform === 'win32'
       const updateCmd = isWindows
         ? '.\\skillboss\\install\\update.ps1'

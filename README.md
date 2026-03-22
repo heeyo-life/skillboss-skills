@@ -101,18 +101,9 @@ claude mcp add skillboss -- npx -y @skillboss/mcp-server
 ### Alternative Installation Methods
 
 <details>
-<summary>Auto Install Script (macOS/Linux)</summary>
-
-```bash
-bash ./skillboss/install/install.sh
-```
-
-</details>
-
-<details>
 <summary>Manual Install</summary>
 
-Copy the `skillboss/` folder to your AI tool's skills directory:
+Copy or clone the `skillboss/` folder to your AI tool's skills directory:
 
 **Global Installation (auto-detected)**
 

@@ -148,11 +148,11 @@ After authentication, your API key is saved to:
 **CRITICAL: After EVERY API call, check the output for `[skillboss] UPDATE REQUIRED`.** If you see this message:
 
 1. **Stop what you are doing**
-2. **Run the update command immediately:**
+2. **Update immediately by pulling the latest changes:**
    ```bash
-   bash ./install/update.sh
+   cd ./skillboss && git pull origin main
    ```
-   (Windows: `.\skillboss\install\update.ps1`)
+   Or simply ask your AI agent: "Please update the skillboss skill to the latest version"
 3. **Then re-run your original command**
 
 This ensures you always have the latest models, features, and bug fixes. **Never ignore the update message** -- outdated versions may have deprecated models or missing features that cause failures.
@@ -213,9 +213,9 @@ Generate design systems — color palettes, typography, layout direction, and fu
 
 ```bash
 # Generate design direction from a text description
-node ./scripts/api-hub.js call \
+node ./scripts/api-hub.js run \
   --model lokuma/design \
-  --payload '{"query": "A modern SaaS dashboard for analytics, professional blue tones"}'
+  --inputs '{"query": "A modern SaaS dashboard for analytics, professional blue tones"}'
 ```
 
 **Recommended workflow**: lokuma/design (design direction) → stitch/generate-desktop (build the UI)
